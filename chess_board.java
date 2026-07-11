@@ -5,10 +5,11 @@ import javax.swing.*;
 
     - Make black/white piece legal move checks into single functions with a param black or white with a param
     that passes through do define what the check for piece color should be
-    - Add checks and checkmates
+    - Add checks and checkmates -> add kings being able to influent whether a square is checked by other side
     - Consolidate repeated code, is seen a lot in logic code
     - build an interface to build a chess engine into this game
     - port the legal move logic over to a seperate file for the engine
+
     ##########
 */
 
