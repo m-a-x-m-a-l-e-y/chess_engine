@@ -88,8 +88,19 @@ public class board_render extends JPanel {
                 selected_row = row;
                 selected_col = col;
             } else if (is_valid_move(selected_row, selected_col, row, col)) {
-                board_state[row][col] = board_state[selected_row][selected_col];
+                int moved_piece = board_state[selected_row][selected_col];
+                board_state[row][col] = moved_piece;
                 board_state[selected_row][selected_col] = 0;
+
+                // keep king position tracking in sync since the validity checks are now pure
+                if (moved_piece == 6) {
+                    w_king_row = row;
+                    w_king_col = col;
+                } else if (moved_piece == -6) {
+                    b_king_row = row;
+                    b_king_col = col;
+                }
+
                 // reset selected moves and alternate turns
                 selected_row = -1;
                 selected_col = -1;
@@ -114,452 +125,44 @@ public class board_render extends JPanel {
         
         // check for piece and run legal check for that piece
         if(selected_piece == 1){
-            return white_pawn(from_row, from_col, to_row, to_col);
+            return valid_move_utils.white_pawn(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == -1){
-            return black_pawn(from_row, from_col, to_row, to_col);
+            return valid_move_utils.black_pawn(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == 2){
-            return white_rook(from_row, from_col, to_row, to_col);
+            return valid_move_utils.white_rook(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -2){
-            return black_rook(from_row, from_col, to_row, to_col);
+            return valid_move_utils.black_rook(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == 3){
-            return white_knight(from_row, from_col, to_row, to_col);
+            return valid_move_utils.white_knight(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -3){
-            return black_knight(from_row, from_col, to_row, to_col);
+            return valid_move_utils.black_knight(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 4){
-            return white_bishop(from_row, from_col, to_row, to_col);
+            return valid_move_utils.white_bishop(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == -4){
-            return black_bishop(from_row, from_col, to_row, to_col);
+            return valid_move_utils.black_bishop(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 5){
-            return white_queen(from_row, from_col, to_row, to_col);
+            return valid_move_utils.white_queen(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -5){
-            return black_queen(from_row, from_col, to_row, to_col);
+            return valid_move_utils.black_queen(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 6){
-            return white_king(from_row, from_col, to_row, to_col);
+            return valid_move_utils.white_king(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -6){
-            return black_king(from_row, from_col, to_row, to_col);
+            return valid_move_utils.black_king(board_state, from_row, from_col, to_row, to_col);
         }
 
         return false;
-        
-    }
 
-    private boolean white_pawn(int from_row, int from_col, int to_row, int to_col){
-        // should consolidate functions of both pieces to one function but for now this is fine just trying to make it possible to demonstrate the chess engine
-        if(to_row == 7 || to_row == 6){
-            return false;
-        }
-        if(from_col == to_col){
-            if(board_state[to_row][to_col] == 0){
-                if(from_row == (6)){
-                    if(board_state[5][from_col] == 0 && from_col == to_col && (from_row - to_row) < 3){
-                        return true;
-                    }
-                }
-                else{
-                    if(from_row > to_row && (from_row - to_row) < 2){
-                        return true;
-                    }
-                }
-            }
-        }
-        else if( Math.abs(to_col - from_col) == 1 && (from_row- to_row) == 1){
-            if(board_state[to_row][to_col] < 0){
-                return true;
-            } 
-        }
-        return false;
-    }
-
-    private boolean black_pawn(int from_row, int from_col, int to_row, int to_col){
-        if(to_row == 0 || to_row == 1){
-            return false;
-        }
-
-        if(from_col == to_col){
-            if(board_state[to_row][to_col] == 0){
-                if(from_row == (1)){
-                    if(board_state[2][from_col] == 0 && (to_row - from_row) < 3){
-                        return true;
-                    }
-                }
-                else if(to_col == from_col){
-                    if(from_row < to_row && (to_row - from_row) < 2){
-                        return true;
-                    }
-                }
-            }
-        }
-        else if( Math.abs(to_col - from_col) == 1 && ( to_row - from_row) == 1){
-            if(board_state[to_row][to_col] > 0){
-                return true;
-            } 
-        }
-        return false;
-    }
-
-    private boolean white_rook(int from_row, int from_col, int to_row, int to_col){
-        int col = from_col;
-        int row = from_row;
-
-        if(board_state[to_row][to_col] > 0){ return false;}
-
-        // check all four directions at once
-        if(from_row != to_row && from_col != to_col){return false;}
-
-        // finding bounds horizontally
-        if(col < to_col && board_state[from_row][col + 1] <= 0){
-            while(col < to_col && board_state[from_row][col + 1] <= 0){
-                col++;  
-            }
-            
-        }
-        else if (col > to_col && board_state[from_row][col - 1] <= 0){
-            while(col > to_col && board_state[from_row][col - 1] <= 0){
-                col--;  
-            }
-        }
-
-        // finding bounds of vertically
-        if(row < to_row && board_state[row + 1][from_col] <= 0){
-            while(row < to_row && board_state[row + 1][from_col] <= 0){
-                row++; 
-            }
-        }
-        else if (row > to_row && board_state[row - 1][from_col] <= 0){
-            while(row > to_row && board_state[row - 1][from_col] <= 0){
-                row--;
-            }
-                
-        }   
-            
-        // at this point col and row hvae moved towards the to_col or to_row as far as possible, we need to check if the value is 1 less than the target row/column, and determine if the piece is capturable
-        if(from_col != to_col){ return (Math.abs(col - to_col) == 0);}
-        if(from_row != to_row){ return (Math.abs(row - to_row) == 0);}
-        
-        return false;
-    }
-    
-    private boolean black_rook(int from_row, int from_col, int to_row, int to_col){
-                int col = from_col;
-        int row = from_row;
-
-        if(board_state[to_row][to_col] < 0){ return false;}
-
-        // check all four directions at once
-        if(from_row != to_row && from_col != to_col){return false;}
-
-        // finding bounds horizontally
-        if(col < to_col && board_state[from_row][col + 1] >= 0){
-            while(col < to_col && board_state[from_row][col + 1] >= 0){
-                col++;  
-            }
-            
-        }
-        else if (col > to_col && board_state[from_row][col - 1] >= 0){
-            while(col > to_col && board_state[from_row][col - 1] >= 0){
-                col--;  
-            }
-        }
-
-        // finding bounds of vertically
-        if(row < to_row && board_state[row + 1][from_col] >= 0){
-            while(row < to_row && board_state[row + 1][from_col] >= 0){
-                row++; 
-            }
-        }
-        else if (row > to_row && board_state[row - 1][from_col] >= 0){
-            while(row > to_row && board_state[row - 1][from_col] >= 0){
-                row--;
-            }
-                
-        }   
-            
-        // at this point col and row hvae moved towards the to_col or to_row as far as possible, we need to check if the value is 1 less than the target row/column, and determine if the piece is capturable
-        if(from_col != to_col){ return (Math.abs(col - to_col) == 0);}
-        if(from_row != to_row){ return (Math.abs(row - to_row) == 0);}
-        
-        return false;
-    }
-    
-    private boolean white_knight(int from_row, int from_col, int to_row, int to_col){
-        if(board_state[to_row][to_col] > 0){ return false; }
-
-        if(to_col - from_col == 2 || to_col - from_col == -2){
-            if(to_row - from_row == 1 || to_row - from_row == -1){
-                return true;
-            }
-        } 
-        else if(to_row - from_row == 2 || to_row - from_row == -2){
-            if(to_col - from_col == 1 || to_col - from_col == -1){
-                return true;
-            }
-        } 
-        return false;
-    }
-    
-    private boolean black_knight(int from_row, int from_col, int to_row, int to_col){
-        if(board_state[to_row][to_col] < 0){ return false; }
-
-        if(to_col - from_col == 2 || to_col - from_col == -2){
-            if(to_row - from_row == 1 || to_row - from_row == -1){
-                return true;
-            }
-        } 
-        else if(to_row - from_row == 2 || to_row - from_row == -2){
-            if(to_col - from_col == 1 || to_col - from_col == -1){
-                return true;
-            }
-        } 
-        return false;
-
-    }
-
-    private boolean white_bishop(int from_row, int from_col, int to_row, int to_col){
-        // don't arrive at a square where there is a white space
-        if(board_state[to_row][to_col] > 0){ return false;}
-
-        // the method that the bishop uses to evaluate whether its move is legal
-        // is to determine which quadrant the bishop is moving to, then check the 'up to the right' or equivalent square 
-        // until reaching the target square. If any square is not empty, return false, finally check if the coordinates of the moving checker (the 'from' values)
-        // are equal to the target values ('to')
-
-        if(to_col > from_col){
-            if(to_row > from_row){
-                while(to_row > from_row ){
-                    from_row++;
-                    from_col++;
-                    if(board_state[from_row][from_col] > 0){
-                        return false;
-                    }
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;} 
-            } 
-            else if (to_row < from_row){
-                while(to_row < from_row){
-                    from_row--;
-                    from_col++;
-                    if(board_state[from_row][from_col] > 0){
-                        return false;
-                    } 
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;}
-            }
-        }
-        else if(to_col < from_col){
-            if(to_row > from_row){
-                while(to_row > from_row ){
-                    from_row++;
-                    from_col--;
-                    if(board_state[from_row][from_col] > 0){
-                        return false;
-                    }
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;}
-            } 
-            else if (to_row < from_row){
-                while(to_row < from_row){
-                    from_row--;
-                    from_col--;
-                    if(board_state[from_row][from_col] > 0){
-                        return false;
-                    }
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;}
-            }
-        }
-        return false;
-    }
-    
-    private boolean black_bishop(int from_row, int from_col, int to_row, int to_col){
-        // don't arrive at a square where there is a white space
-        if(board_state[to_row][to_col] < 0){ return false;}
-
-        // the method that the bishop uses to evaluate whether its move is legal
-        // is to determine which quadrant the bishop is moving to, then check the 'up to the right' or equivalent square 
-        // until reaching the target square. If any square is not empty, return false, finally check if the coordinates of the moving checker (the 'from' values)
-        // are equal to the target values ('to')
-
-        if(to_col > from_col){
-            if(to_row > from_row){
-                while(to_row > from_row ){
-                    from_row++;
-                    from_col++;
-                    if(board_state[from_row][from_col] < 0){
-                        return false;
-                    }
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;} 
-            } 
-            else if (to_row < from_row){
-                while(to_row < from_row){
-                    from_row--;
-                    from_col++;
-                    if(board_state[from_row][from_col] < 0){
-                        return false;
-                    } 
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;}
-            }
-        }
-        else if(to_col < from_col){
-            if(to_row > from_row){
-                while(to_row > from_row ){
-                    from_row++;
-                    from_col--;
-                    if(board_state[from_row][from_col] < 0){
-                        return false;
-                    }
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;}
-            } 
-            else if (to_row < from_row){
-                while(to_row < from_row){
-                    from_row--;
-                    from_col--;
-                    if(board_state[from_row][from_col] < 0){
-                        return false;
-                    }
-                }
-                if(from_col == to_col && from_row == to_row){return true;}
-                else {return false;}
-            }
-        }
-        return false;
-    }
-
-    private boolean white_queen(int from_row, int from_col, int to_row, int to_col){
-        return white_rook(from_row, from_col, to_row, to_col) || white_bishop(from_row, from_col, to_row, to_col);
-    }
-    
-    private boolean black_queen(int from_row, int from_col, int to_row, int to_col){
-        return black_rook(from_row, from_col, to_row, to_col) || black_bishop(from_row, from_col, to_row, to_col);
-    }
-
-    private boolean white_king(int from_row, int from_col, int to_row, int to_col){
-        if(board_state[to_row][to_col] > 0 ){ return false; }
-        if(Math.abs(to_row - from_row) > 1 || Math.abs(to_col - from_col) > 1 ){ return false; }
-        
-        // check if the target is seen by an opposing piece
-        if(checked_by_white(to_row, to_col)){
-
-        }
-
-        // Update king position : 
-        w_king_col = to_col;
-        w_king_row = to_row;
-        System.out.println(w_king_col + "  wkc : wkr" + w_king_row);
-        return true;
-    }
-    
-    private boolean black_king(int from_row, int from_col, int to_row, int to_col){
-        if(board_state[to_row][to_col] < 0 ){ return false; }
-        if(Math.abs(to_row - from_row) > 1 || Math.abs(to_col - from_col) > 1 ){ return false; }
-        
-        
-        // check if the target is seen by an opposing piece
-
-        // Update king position : 
-        b_king_col = to_col;
-        b_king_row = to_row;
-        System.out.println(b_king_col + "  wkc : wkr" + b_king_row);
-
-        return true;
-    }
-
-    private boolean checked_by_white(int to_row, int to_col){
-        
-        // temp is a temporary view of selected squares on the board 
-        int temp = to_row;
-        temp--;
-        
-
-        // check vertically upwards
-        while(temp > -1){
-            if(board_state[to_row][to_col] == -2 || board_state[to_row][to_col] == -5){
-                return true;
-            }
-            if(board_state[to_row][to_col] == -3 
-                || board_state[to_row][to_col] == -4 
-                || board_state[to_row][to_col] == -1
-                || board_state[to_row][to_col] > 0){
-                break; // hit white piece, or a black: bishop, pawn or king -> TODO handle kings later
-            }
-            temp--;
-        }
-        // check vertically downwards
-        temp = to_row;
-        temp++;
-        while(temp < 8){
-            if(board_state[to_row][to_col] == -2 || board_state[to_row][to_col] == -5){
-                return true;
-            }
-            if(board_state[to_row][to_col] == -3 
-                || board_state[to_row][to_col] == -4 
-                || board_state[to_row][to_col] == -1
-                || board_state[to_row][to_col] > 0){
-                break; // hit white piece, or a black: bishop, pawn or king -> TODO handle kings later
-            }
-            temp++;
-        }
-        // check horizontally right
-        while(temp > -1){
-            if(board_state[to_row][to_col] == -2 || board_state[to_row][to_col] == -5){
-                return true;
-            }
-            if(board_state[to_row][to_col] == -3 
-                || board_state[to_row][to_col] == -4 
-                || board_state[to_row][to_col] == -1
-                || board_state[to_row][to_col] > 0){
-                break; // hit white piece, or a black: bishop, pawn or king -> TODO handle kings later
-            }
-            temp++;
-        }
-        // check horizontally left
-        while(temp < 8){
-            if(board_state[to_row][to_col] == -2 || board_state[to_row][to_col] == -5){
-                return true;
-            }
-            if(board_state[to_row][to_col] == -3 
-                || board_state[to_row][to_col] == -4 
-                || board_state[to_row][to_col] == -1
-                || board_state[to_row][to_col] > 0){
-                break; // hit white piece, or a black: bishop, pawn or king -> TODO handle kings later
-            }
-            temp++;
-        }
-
-
-
-        // Check diagonals : 
-            // Quadrant 1
-
-            // Quadrant 2 
-            
-            // Quadrant 3 
-            
-            // Quadrant 4 
-
-
-
-        return false;
     }
 
     private String piece_symbol(int piece) {
