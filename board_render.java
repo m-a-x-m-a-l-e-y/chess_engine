@@ -91,20 +91,12 @@ public class board_render extends JPanel {
                 int moved_piece = board_state[selected_row][selected_col];
                 board_state[row][col] = moved_piece;
                 board_state[selected_row][selected_col] = 0;
-
-                // keep king position tracking in sync since the validity checks are now pure
-                if (moved_piece == 6) {
-                    w_king_row = row;
-                    w_king_col = col;
-                } else if (moved_piece == -6) {
-                    b_king_row = row;
-                    b_king_col = col;
-                }
-
                 // reset selected moves and alternate turns
                 selected_row = -1;
                 selected_col = -1;
                 white_to_move = !white_to_move;
+                // System.out.println(w_king_row + "w" + w_king_col);
+                // System.out.println(b_king_row + "b" + b_king_col);
             }
         }
         // redraw board for changes
@@ -155,14 +147,25 @@ public class board_render extends JPanel {
             return valid_move_utils.black_queen(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 6){
-            return valid_move_utils.white_king(board_state, from_row, from_col, to_row, to_col);
+            boolean valid = valid_move_utils.white_king(board_state, from_row, from_col, to_row, to_col);
+            // tracking king's position for check related calculations
+            if(valid){
+                w_king_col = to_col;
+                w_king_row = to_row; 
+            }
+            return valid;
         }
         else if (selected_piece == -6){
-            return valid_move_utils.black_king(board_state, from_row, from_col, to_row, to_col);
+            boolean valid = valid_move_utils.black_king(board_state, from_row, from_col, to_row, to_col);
+            // tracking king's position for check related calculations
+            if(valid){
+                b_king_col = to_col;
+                b_king_row = to_row; 
+            }
+            return valid;
         }
 
         return false;
-
     }
 
     private String piece_symbol(int piece) {

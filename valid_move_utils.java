@@ -5,6 +5,10 @@ public class valid_move_utils {
 
     private valid_move_utils() {}
 
+    // ==========================================================================
+    // PAWN
+    // ==========================================================================
+
     public static boolean white_pawn(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         // should consolidate functions of both pieces to one function but for now this is fine just trying to make it possible to demonstrate the chess engine
         if(to_row == 7 || to_row == 6){
@@ -58,6 +62,10 @@ public class valid_move_utils {
         }
         return false;
     }
+
+    // ==========================================================================
+    // ROOK
+    // ==========================================================================
 
     public static boolean white_rook(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         int col = from_col;
@@ -143,6 +151,10 @@ public class valid_move_utils {
         return false;
     }
 
+    // ==========================================================================
+    // KNIGHT
+    // ==========================================================================
+
     public static boolean white_knight(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         if(board_state[to_row][to_col] > 0){ return false; }
 
@@ -175,6 +187,10 @@ public class valid_move_utils {
         return false;
 
     }
+
+    // ==========================================================================
+    // BISHOP
+    // ==========================================================================
 
     public static boolean white_bishop(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         // don't arrive at a square where there is a white space
@@ -296,6 +312,10 @@ public class valid_move_utils {
         return false;
     }
 
+    // ==========================================================================
+    // QUEEN
+    // ==========================================================================
+
     public static boolean white_queen(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         return white_rook(board_state, from_row, from_col, to_row, to_col) || white_bishop(board_state, from_row, from_col, to_row, to_col);
     }
@@ -303,6 +323,10 @@ public class valid_move_utils {
     public static boolean black_queen(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         return black_rook(board_state, from_row, from_col, to_row, to_col) || black_bishop(board_state, from_row, from_col, to_row, to_col);
     }
+
+    // ==========================================================================
+    // KING
+    // ==========================================================================
 
     public static boolean white_king(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         if(board_state[to_row][to_col] > 0 ){ return false; }
@@ -328,6 +352,10 @@ public class valid_move_utils {
         return true;
     }
 
+    // ==========================================================================
+    // CHECK DETECTION
+    // ==========================================================================
+
     public static boolean checked_by_black(int[][] board_state, int to_row, int to_col){
         //
         // VERTICALS AND HORIZONTALS
@@ -341,11 +369,12 @@ public class valid_move_utils {
                 temp = to_row;
                 temp--;
 
-                System.out.println("1");
+                //System.out.println("1");
                 // check vertically upwards
                 while(temp > -1){
+                    if(board_state[temp][to_col] == -6 && (to_row - temp) == 1){return true;} // opposite king
                     if(board_state[temp][to_col] == -2 || board_state[temp][to_col] == -5){
-                        System.out.println(board_state[temp][to_col]);
+                        //System.out.println(board_state[temp][to_col]);
                         return true;
                     }
                     if(board_state[temp][to_col] == -3
@@ -359,10 +388,11 @@ public class valid_move_utils {
                 // check vertically downwards
                 temp = to_row;
                 temp++;
-                System.out.println("1");
+                //System.out.println("1");
                 while(temp < 8){
+                    if(board_state[temp][to_col] == -6 && (temp - to_row) == 1){return true;}
                     if(board_state[temp][to_col] == -2 || board_state[temp][to_col] == -5){
-                        System.out.println(board_state[temp][to_col]);
+                        //System.out.println(board_state[temp][to_col]);
                         return true;
                     }
                     if(board_state[temp][to_col] == -3
@@ -376,10 +406,11 @@ public class valid_move_utils {
                 // check horizontally right
                 temp = to_col;
                 temp--;
-                System.out.println("1");
+                //System.out.println("1");
                 while(temp > -1){
+                    if(board_state[to_row][temp] == -6 && (to_col - temp) == 1){return true;}
                     if(board_state[to_row][temp] == -2 || board_state[to_row][temp] == -5){
-                        System.out.println(board_state[to_row][temp]);
+                        //System.out.println(board_state[to_row][temp]);
                         return true;
                     }
                     if(board_state[to_row][temp] == -3
@@ -394,11 +425,12 @@ public class valid_move_utils {
                 temp = to_col;
                 temp++;
                 temp = to_col;
-                System.out.println("1");
+                //System.out.println("1");
 
                 while(temp < 8){
+                    if(board_state[to_row][temp] == -6 && (temp - to_col) == 1){return true;}
                     if(board_state[to_row][temp] == -2 || board_state[to_row][temp] == -5){
-                        System.out.println(board_state[to_row][temp]);
+                        //System.out.println(board_state[to_row][temp]);
                         return true;
                     }
                     if(board_state[to_row][temp] == -3
@@ -409,7 +441,7 @@ public class valid_move_utils {
                     }
                     temp++;
                 }
-                System.out.println("1");
+                //System.out.println("1");
         //
         // END OF VERTICAL AND HORIZONTAL CHECKING
         //
@@ -417,7 +449,7 @@ public class valid_move_utils {
         //
         // CHECKING DIAGONALS :
         //
-                                    System.out.println("diag");
+                                    //System.out.println("diag");
 
             // Quadrant 1
 
@@ -427,11 +459,12 @@ public class valid_move_utils {
                 temp_x++;
                 if((temp_x > -1 && temp_x < 8 && temp_y > -1 && temp_y < 8)){
                     piece = board_state[temp_y][temp_x];
-
                     if(piece == -1){return true;} // Quadrants 2 and 1 for white king, 3 and 4 for black king because pawns only capture one way
 
                     while(temp_x < 8 && temp_y > -1){
                         piece = board_state[temp_y][temp_x];
+                        
+                        if(piece == -6 && (to_row - temp_y) == 1){return true;}
                         if(piece == -4 || piece == -5){
                             return true;
                         }
@@ -442,7 +475,7 @@ public class valid_move_utils {
                         temp_x++;
                     }
                 }
-                                                 System.out.println("diag");
+                                                 //System.out.println("diag");
 
             // Quadrant 2
 
@@ -452,14 +485,15 @@ public class valid_move_utils {
                 temp_x--;
 
                 if((temp_x > -1 && temp_x < 8 && temp_y > -1 && temp_y < 8)){
-
                     piece = board_state[temp_y][temp_x];
                     if(piece == -1){return true;}
 
                     while(temp_x > -1 && temp_y > -1){
                             piece = board_state[temp_y][temp_x];
+
+                            if(piece == -6 && (to_row - temp_y) == 1){return true;} // check for kings two spaces away
                             if(piece == -4 || piece == -5){
-                                System.out.println(board_state[temp_y][temp_x]);
+                                //System.out.println(board_state[temp_y][temp_x]);
                                 return true;
                             }
                             if(piece > 0 || piece == -3 || piece == -2 || piece == -1){ // its okay to check -1 here because we have an initial check
@@ -469,7 +503,7 @@ public class valid_move_utils {
                             temp_x--;
                     }
                 }
-                        System.out.println("2");
+                        //System.out.println("2");
 
 
             // Quadrant 3
@@ -484,6 +518,8 @@ public class valid_move_utils {
 
                     while(temp_x > -1 && temp_y < 8){
                             piece = board_state[temp_y][temp_x];
+
+                            if(piece == -6 && (temp_y - to_row) == 1){return true;}
                             if(piece == -4 || piece == -5){
                                 return true;
                             }
@@ -494,26 +530,28 @@ public class valid_move_utils {
                             temp_x--;
                     }
                 }
-                        System.out.println("3");
+                        //System.out.println("3");
             // Quadrant 4
 
                 temp_x = to_col;
                 temp_y = to_row;
-                temp_y--;
+                temp_y++;
                 temp_x++;
 
                 if((temp_x > -1 && temp_x < 8 && temp_y > -1 && temp_y < 8)){
                     piece = board_state[temp_y][temp_x];
 
-                    while(temp_x < 8 && temp_y > -1){
+                    while(temp_x < 8 && temp_y < 8){
                             piece = board_state[temp_y][temp_x];
+
+                            if(piece == -6 && (temp_y - to_row) == 1){return true;}
                             if(piece == -4 || piece == -5){
                                 return true;
                             }
                             if(piece > 0 || piece == -3 || piece == -2 || piece == -1){
                                 break;
                             }
-                            temp_y--;
+                            temp_y++;
                             temp_x++;
                     }
                 }
@@ -541,11 +579,12 @@ public class valid_move_utils {
                 temp = to_row;
                 temp--;
 
-                System.out.println("1");
+                //System.out.println("1");
                 // check vertically upwards
                 while(temp > -1){
+                    if(board_state[temp][to_col] == 6 && (to_row - temp) == 1){return true;} // opposite king
                     if(board_state[temp][to_col] == 2 || board_state[temp][to_col] == 5){
-                        System.out.println(board_state[temp][to_col]);
+                        //System.out.println(board_state[temp][to_col]);
                         return true;
                     }
                     if(board_state[temp][to_col] == 3
@@ -559,10 +598,11 @@ public class valid_move_utils {
                 // check vertically downwards
                 temp = to_row;
                 temp++;
-                System.out.println("1");
+                //System.out.println("1");
                 while(temp < 8){
+                    if(board_state[temp][to_col] == 6 && (temp - to_row) == 1){return true;}
                     if(board_state[temp][to_col] == 2 || board_state[temp][to_col] == 5){
-                        System.out.println(board_state[temp][to_col]);
+                        //System.out.println(board_state[temp][to_col]);
                         return true;
                     }
                     if(board_state[temp][to_col] == 3
@@ -576,10 +616,11 @@ public class valid_move_utils {
                 // check horizontally right
                 temp = to_col;
                 temp--;
-                System.out.println("1");
+                //System.out.println("1");
                 while(temp > -1){
+                    if(board_state[to_row][temp] == 6 && (to_col - temp) == 1){return true;}
                     if(board_state[to_row][temp] == 2 || board_state[to_row][temp] == 5){
-                        System.out.println(board_state[to_row][temp]);
+                        //System.out.println(board_state[to_row][temp]);
                         return true;
                     }
                     if(board_state[to_row][temp] == 3
@@ -594,11 +635,12 @@ public class valid_move_utils {
                 temp = to_col;
                 temp++;
                 temp = to_col;
-                System.out.println("1");
+                //System.out.println("1");
 
                 while(temp < 8){
+                    if(board_state[to_row][temp] == 6 && (temp - to_col) == 1){return true;}
                     if(board_state[to_row][temp] == 2 || board_state[to_row][temp] == 5){
-                        System.out.println(board_state[to_row][temp]);
+                        //System.out.println(board_state[to_row][temp]);
                         return true;
                     }
                     if(board_state[to_row][temp] == 3
@@ -609,7 +651,7 @@ public class valid_move_utils {
                     }
                     temp++;
                 }
-                System.out.println("1");
+                //System.out.println("1");
         //
         // END OF VERTICAL AND HORIZONTAL CHECKING
         //
@@ -617,7 +659,7 @@ public class valid_move_utils {
         //
         // CHECKING DIAGONALS :
         //
-                                    System.out.println("diag");
+                                    //System.out.println("diag");
 
             // Quadrant 1
 
@@ -630,6 +672,7 @@ public class valid_move_utils {
 
                     while(temp_x < 8 && temp_y > -1){
                         piece = board_state[temp_y][temp_x];
+                        if(piece == 6 && (to_row - temp_y) == 1){return true;}
                         if(piece == 4 || piece == 5){
                             return true;
                         }
@@ -640,7 +683,7 @@ public class valid_move_utils {
                         temp_x++;
                     }
                 }
-                                                 System.out.println("diag");
+                                                 //System.out.println("diag");
 
             // Quadrant 2
 
@@ -655,8 +698,9 @@ public class valid_move_utils {
 
                     while(temp_x > -1 && temp_y > -1){
                             piece = board_state[temp_y][temp_x];
+                            if(piece == 6 && (to_row - temp_y) == 1){return true;}
                             if(piece == 4 || piece == 5){
-                                System.out.println(board_state[temp_y][temp_x]);
+                                //System.out.println(board_state[temp_y][temp_x]);
                                 return true;
                             }
                             if(piece < 0 || piece == 3 || piece == 2 || piece == 1){ // its okay to check 1 here because we have an initial check
@@ -666,7 +710,7 @@ public class valid_move_utils {
                             temp_x--;
                     }
                 }
-                        System.out.println("2");
+                        //System.out.println("2");
 
 
             // Quadrant 3
@@ -682,6 +726,7 @@ public class valid_move_utils {
 
                     while(temp_x > -1 && temp_y < 8){
                             piece = board_state[temp_y][temp_x];
+                            if(piece == 6 && (temp_y - to_row) == 1){return true;}
                             if(piece == 4 || piece == 5){
                                 return true;
                             }
@@ -692,27 +737,28 @@ public class valid_move_utils {
                             temp_x--;
                     }
                 }
-                        System.out.println("3");
+                        //System.out.println("3");
             // Quadrant 4
 
                 temp_x = to_col;
                 temp_y = to_row;
-                temp_y--;
+                temp_y++;
                 temp_x++;
 
                 if((temp_x > -1 && temp_x < 8 && temp_y > -1 && temp_y < 8)){
                     piece = board_state[temp_y][temp_x];
                     if(piece == 1){return true;} // Quadrants 2 and 1 for white king, 3 and 4 for black king because pawns only capture one way
 
-                    while(temp_x < 8 && temp_y > -1){
+                    while(temp_x < 8 && temp_y < 8){
                             piece = board_state[temp_y][temp_x];
+                            if(piece == 6 && (temp_y - to_row) == 1){return true;}
                             if(piece == 4 || piece == 5){
                                 return true;
                             }
                             if(piece < 0 || piece == 3 || piece == 2 || piece == 1){
                                 break;
                             }
-                            temp_y--;
+                            temp_y++;
                             temp_x++;
                     }
                 }
