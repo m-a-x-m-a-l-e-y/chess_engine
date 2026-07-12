@@ -46,7 +46,7 @@ public class chess_board {
     }   
 
     private boolean won(){
-        // to implement
+        // to implement //// probably evaluating this in  the board_render function now just check if there are any legal moves for the player
         return false;
     }
 

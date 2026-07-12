@@ -28,6 +28,7 @@ public class board_render extends JPanel {
     private boolean white_to_move = true;
     private boolean in_check = false;
     private chess_engine engine;
+    private valid_move_utils validator = new valid_move_utils();
     // Constant reference to where the kings are 
     // for evaluation of check and checkmate
     private int b_king_row = 0;
@@ -54,6 +55,8 @@ public class board_render extends JPanel {
                 // 
                 if(mode == 2){
                     // note : if mode == 2 white_to_move is essentially always true
+                    // this just means that white playing triggers a response from the engine which plays black
+                    // the engine then returns the best move it found and then the board is moved accordingly
                     if(white_to_move){
                         handle_click(row, column);
                         // Play Engine Move :
@@ -88,11 +91,9 @@ public class board_render extends JPanel {
             }
         } 
         else {
-            if(in_check && 6 != Math.abs(clicked_piece)){
-                selected_col = -1;
-                selected_row = -1;
-                return;
-            }    
+            int selected_piece = board_state[selected_row][selected_col];
+
+
             // Case 2: the player has selected a piece and this is trying to move that piece to the new row and col
             if (row == selected_row && col == selected_col) {
                 selected_row = -1;
@@ -101,12 +102,22 @@ public class board_render extends JPanel {
                 selected_row = row;
                 selected_col = col;
             } else if (is_valid_move(selected_row, selected_col, row, col)) {
+
+                // we can just move all the logic to valid_move_utils by checking if the respective side's king is now in check, if so, it is not a valid move
+                // if(in_check){
+                //     int[][] hypothetical = board_state.clone();
+                //     hypothetical[row][col] = hypothetical[selected_row][selected_col];
+                //     if(white_to_move){
+
+                //     }
+                // }
+
                 int moved_piece = board_state[selected_row][selected_col];
                 board_state[row][col] = moved_piece;
                 board_state[selected_row][selected_col] = 0;
                 if(white_to_move){ 
                     if(is_valid_move(row, col, b_king_row, b_king_col)){
-                       in_check = true; 
+                       in_check = true; // -> refactor this logic
                     }
                     else{
                         in_check = false;
@@ -145,37 +156,37 @@ public class board_render extends JPanel {
         
         // check for piece and run legal check for that piece
         if(selected_piece == 1){
-            return valid_move_utils.white_pawn(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_pawn(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == -1){
-            return valid_move_utils.black_pawn(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_pawn(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == 2){
-            return valid_move_utils.white_rook(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_rook(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -2){
-            return valid_move_utils.black_rook(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_rook(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == 3){
-            return valid_move_utils.white_knight(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_knight(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -3){
-            return valid_move_utils.black_knight(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_knight(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 4){
-            return valid_move_utils.white_bishop(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_bishop(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == -4){
-            return valid_move_utils.black_bishop(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_bishop(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 5){
-            return valid_move_utils.white_queen(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_queen(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -5){
-            return valid_move_utils.black_queen(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_queen(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 6){
-            boolean valid = valid_move_utils.white_king(board_state, from_row, from_col, to_row, to_col);
+            boolean valid = validator.white_king(board_state, from_row, from_col, to_row, to_col);
             // tracking king's position for check related calculations
             if(valid){
                 w_king_col = to_col;
@@ -184,7 +195,7 @@ public class board_render extends JPanel {
             return valid;
         }
         else if (selected_piece == -6){
-            boolean valid = valid_move_utils.black_king(board_state, from_row, from_col, to_row, to_col);
+            boolean valid = validator.black_king(board_state, from_row, from_col, to_row, to_col);
             // tracking king's position for check related calculations
             if(valid){
                 b_king_col = to_col;
