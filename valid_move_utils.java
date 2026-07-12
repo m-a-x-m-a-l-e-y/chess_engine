@@ -468,7 +468,7 @@ public class valid_move_utils {
                         if(piece == -4 || piece == -5){
                             return true;
                         }
-                        if(piece > 0 || piece == -3 || piece == -2 || piece == -1){
+                        if(piece > 0 || piece == -3 || piece == -2 || piece == -1 || piece == -6){
                             break;
                         }
                         temp_y--;
@@ -493,10 +493,10 @@ public class valid_move_utils {
 
                             if(piece == -6 && (to_row - temp_y) == 1){return true;} // check for kings two spaces away
                             if(piece == -4 || piece == -5){
-                                //System.out.println(board_state[temp_y][temp_x]);
+                                System.out.println(board_state[temp_y][temp_x]);
                                 return true;
                             }
-                            if(piece > 0 || piece == -3 || piece == -2 || piece == -1){ // its okay to check -1 here because we have an initial check
+                            if(piece > 0 || piece == -3 || piece == -2 || piece == -1 || piece == -6){ // its okay to check -1 here because we have an initial check
                                 break;
                             }
                             temp_y--;
@@ -523,7 +523,7 @@ public class valid_move_utils {
                             if(piece == -4 || piece == -5){
                                 return true;
                             }
-                            if(piece > 0 || piece == -3 || piece == -2 || piece == -1){
+                            if(piece > 0 || piece == -3 || piece == -2 || piece == -1 || piece == -6){
                                 break;
                             }
                             temp_y++;
@@ -548,7 +548,7 @@ public class valid_move_utils {
                             if(piece == -4 || piece == -5){
                                 return true;
                             }
-                            if(piece > 0 || piece == -3 || piece == -2 || piece == -1){
+                            if(piece > 0 || piece == -3 || piece == -2 || piece == -1 || piece == -6){
                                 break;
                             }
                             temp_y++;

@@ -9,8 +9,6 @@ import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-
-
 public class board_render extends JPanel {
 
     // ENUM for pieces : 
@@ -22,37 +20,52 @@ public class board_render extends JPanel {
     // 5: queen 
     // 6: king
 
-
+    private int mode;
     private int[][] board_state;
     private final int space_size = 100;
     private int selected_row = -1; // -1 :  nothing selected
     private int selected_col = -1;
     private boolean white_to_move = true;
     private boolean in_check = false;
-
+    private chess_engine engine;
     // Constant reference to where the kings are 
     // for evaluation of check and checkmate
     private int b_king_row = 0;
     private int b_king_col = 4;
     private int w_king_row = 7;
     private int w_king_col = 4;
-    // private Set<int[]> whiteValid= new HashSet<>();
 
-    public board_render(int[][] board_state_in) {
+    public board_render(int[][] board_state_in, int mode) {
         this.board_state = board_state_in;
+        this.mode = mode; // -> assign player versus player or player vs engine
+        this.engine = new chess_engine(mode);
         Dimension dimension = new Dimension(8 * space_size, 8 * space_size);
         this.setPreferredSize(dimension);
 
-        // Listen for clicks on the board
+        // Listen for clicks on the board and determines what column / row the click was executed
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent clicked){
-                // 
                 int column = clicked.getX() / space_size;
                 int row = clicked.getY() / space_size;
 
-                handle_click(row, column);
-
+                //
+                // Gameplay Loop Logic handling if engine is playing or not 
+                // 
+                if(mode == 2){
+                    // note : if mode == 2 white_to_move is essentially always true
+                    if(white_to_move){
+                        handle_click(row, column);
+                        // Play Engine Move :
+                        int[] engine_move = engine.move(board_state); 
+                        board_state[engine_move[0]][engine_move[1]] = board_state[engine_move[2]][engine_move[3]];
+                        board_state[engine_move[2]][engine_move[3]] = 0;
+                    }
+                }
+                else {
+                    handle_click(row, column);
+                }
+                
             }
         });
     }
@@ -75,7 +88,7 @@ public class board_render extends JPanel {
             }
         } 
         else {
-            if(in_check && clicked_piece != Math.abs(6)){
+            if(in_check && 6 != Math.abs(clicked_piece)){
                 selected_col = -1;
                 selected_row = -1;
                 return;
@@ -91,12 +104,29 @@ public class board_render extends JPanel {
                 int moved_piece = board_state[selected_row][selected_col];
                 board_state[row][col] = moved_piece;
                 board_state[selected_row][selected_col] = 0;
+                if(white_to_move){ 
+                    if(is_valid_move(row, col, b_king_row, b_king_col)){
+                       in_check = true; 
+                    }
+                    else{
+                        in_check = false;
+                    }
+                }
+                else{
+                    if(is_valid_move(row, col, w_king_row, w_king_col)){
+                       in_check = true; 
+                    }
+                    else{
+                        in_check = false;
+                    }
+                }
+                
                 // reset selected moves and alternate turns
                 selected_row = -1;
                 selected_col = -1;
                 white_to_move = !white_to_move;
-                // System.out.println(w_king_row + "w" + w_king_col);
-                // System.out.println(b_king_row + "b" + b_king_col);
+                System.out.println(w_king_row + "w" + w_king_col);
+                System.out.println(b_king_row + "b" + b_king_col);
             }
         }
         // redraw board for changes
@@ -107,8 +137,6 @@ public class board_render extends JPanel {
         // System.out.println( from_row + " " +  from_col +  " " + to_row + " " +  to_col);
         int moving_to = board_state[from_row][from_col];
         int target_to = board_state[to_row][to_col];
-        
-     
 
         if (target_to != 0 && (moving_to > 0) == (target_to > 0)) {
             return false;
