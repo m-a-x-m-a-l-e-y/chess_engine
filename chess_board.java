@@ -46,15 +46,14 @@ public class chess_board {
     }   
 
     private boolean won(){
-        // to implement
+        // to implement //// probably evaluating this in  the board_render function now just check if there are any legal moves for the player
         return false;
     }
 
-    private void render_board(){
+    private void render_board(int mode){
         SwingUtilities.invokeLater(() -> {
             JFrame frame = new JFrame("Chessboard from 2D Array");
-            
-            board_render boardPanel = new board_render(this.brd);
+            board_render boardPanel = new board_render(this.brd, mode);
 
             frame.add(boardPanel);
             frame.pack(); // Fits the frame perfectly around our 8x8 panel dimensions
@@ -64,9 +63,18 @@ public class chess_board {
         });
     }
     
+
+    // Running the game is encompassed in this main function
     public static void main(String[] args) {
-        chess_board board = new chess_board(); 
-        board.render_board(); // renders board and adds rules
+        int mode = 1;
+        if(mode == 1){
+            chess_board board = new chess_board(); 
+            board.render_board(mode); // renders board and adds rules
+        }
+        if(mode == 2){ // Mode 2 is playing against an engine
+            chess_board board = new chess_board(); 
+            board.render_board(mode);
+        }
         
     }
 }

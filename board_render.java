@@ -9,8 +9,6 @@ import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-
-
 public class board_render extends JPanel {
 
     // ENUM for pieces : 
@@ -22,37 +20,55 @@ public class board_render extends JPanel {
     // 5: queen 
     // 6: king
 
-
+    private int mode;
     private int[][] board_state;
     private final int space_size = 100;
     private int selected_row = -1; // -1 :  nothing selected
     private int selected_col = -1;
     private boolean white_to_move = true;
     private boolean in_check = false;
-
+    private chess_engine engine;
+    private valid_move_utils validator = new valid_move_utils();
     // Constant reference to where the kings are 
     // for evaluation of check and checkmate
     private int b_king_row = 0;
     private int b_king_col = 4;
     private int w_king_row = 7;
     private int w_king_col = 4;
-    // private Set<int[]> whiteValid= new HashSet<>();
 
-    public board_render(int[][] board_state_in) {
+    public board_render(int[][] board_state_in, int mode) {
         this.board_state = board_state_in;
+        this.mode = mode; // -> assign player versus player or player vs engine
+        this.engine = new chess_engine(mode);
         Dimension dimension = new Dimension(8 * space_size, 8 * space_size);
         this.setPreferredSize(dimension);
 
-        // Listen for clicks on the board
+        // Listen for clicks on the board and determines what column / row the click was executed
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent clicked){
-                // 
                 int column = clicked.getX() / space_size;
                 int row = clicked.getY() / space_size;
 
-                handle_click(row, column);
-
+                //
+                // Gameplay Loop Logic handling if engine is playing or not 
+                // 
+                if(mode == 2){
+                    // note : if mode == 2 white_to_move is essentially always true
+                    // this just means that white playing triggers a response from the engine which plays black
+                    // the engine then returns the best move it found and then the board is moved accordingly
+                    if(white_to_move){
+                        handle_click(row, column);
+                        // Play Engine Move :
+                        int[] engine_move = engine.move(board_state); 
+                        board_state[engine_move[0]][engine_move[1]] = board_state[engine_move[2]][engine_move[3]];
+                        board_state[engine_move[2]][engine_move[3]] = 0;
+                    }
+                }
+                else {
+                    handle_click(row, column);
+                }
+                
             }
         });
     }
@@ -75,11 +91,9 @@ public class board_render extends JPanel {
             }
         } 
         else {
-            if(in_check && clicked_piece != Math.abs(6)){
-                selected_col = -1;
-                selected_row = -1;
-                return;
-            }    
+            int selected_piece = board_state[selected_row][selected_col];
+
+
             // Case 2: the player has selected a piece and this is trying to move that piece to the new row and col
             if (row == selected_row && col == selected_col) {
                 selected_row = -1;
@@ -88,23 +102,42 @@ public class board_render extends JPanel {
                 selected_row = row;
                 selected_col = col;
             } else if (is_valid_move(selected_row, selected_col, row, col)) {
+
+                // we can just move all the logic to valid_move_utils by checking if the respective side's king is now in check, if so, it is not a valid move
+                // if(in_check){
+                //     int[][] hypothetical = board_state.clone();
+                //     hypothetical[row][col] = hypothetical[selected_row][selected_col];
+                //     if(white_to_move){
+
+                //     }
+                // }
+
                 int moved_piece = board_state[selected_row][selected_col];
                 board_state[row][col] = moved_piece;
                 board_state[selected_row][selected_col] = 0;
-
-                // keep king position tracking in sync since the validity checks are now pure
-                if (moved_piece == 6) {
-                    w_king_row = row;
-                    w_king_col = col;
-                } else if (moved_piece == -6) {
-                    b_king_row = row;
-                    b_king_col = col;
+                if(white_to_move){ 
+                    if(is_valid_move(row, col, b_king_row, b_king_col)){
+                       in_check = true; // -> refactor this logic
+                    }
+                    else{
+                        in_check = false;
+                    }
                 }
-
+                else{
+                    if(is_valid_move(row, col, w_king_row, w_king_col)){
+                       in_check = true; 
+                    }
+                    else{
+                        in_check = false;
+                    }
+                }
+                
                 // reset selected moves and alternate turns
                 selected_row = -1;
                 selected_col = -1;
                 white_to_move = !white_to_move;
+                System.out.println(w_king_row + "w" + w_king_col);
+                System.out.println(b_king_row + "b" + b_king_col);
             }
         }
         // redraw board for changes
@@ -115,8 +148,6 @@ public class board_render extends JPanel {
         // System.out.println( from_row + " " +  from_col +  " " + to_row + " " +  to_col);
         int moving_to = board_state[from_row][from_col];
         int target_to = board_state[to_row][to_col];
-        
-     
 
         if (target_to != 0 && (moving_to > 0) == (target_to > 0)) {
             return false;
@@ -125,44 +156,55 @@ public class board_render extends JPanel {
         
         // check for piece and run legal check for that piece
         if(selected_piece == 1){
-            return valid_move_utils.white_pawn(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_pawn(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == -1){
-            return valid_move_utils.black_pawn(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_pawn(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == 2){
-            return valid_move_utils.white_rook(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_rook(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -2){
-            return valid_move_utils.black_rook(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_rook(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == 3){
-            return valid_move_utils.white_knight(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_knight(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -3){
-            return valid_move_utils.black_knight(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_knight(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 4){
-            return valid_move_utils.white_bishop(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_bishop(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == -4){
-            return valid_move_utils.black_bishop(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_bishop(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 5){
-            return valid_move_utils.white_queen(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_queen(board_state, from_row, from_col, to_row, to_col);
         }
         else if (selected_piece == -5){
-            return valid_move_utils.black_queen(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_queen(board_state, from_row, from_col, to_row, to_col);
         }
         else if(selected_piece == 6){
-            return valid_move_utils.white_king(board_state, from_row, from_col, to_row, to_col);
+            boolean valid = validator.white_king(board_state, from_row, from_col, to_row, to_col);
+            // tracking king's position for check related calculations
+            if(valid){
+                w_king_col = to_col;
+                w_king_row = to_row; 
+            }
+            return valid;
         }
         else if (selected_piece == -6){
-            return valid_move_utils.black_king(board_state, from_row, from_col, to_row, to_col);
+            boolean valid = validator.black_king(board_state, from_row, from_col, to_row, to_col);
+            // tracking king's position for check related calculations
+            if(valid){
+                b_king_col = to_col;
+                b_king_row = to_row; 
+            }
+            return valid;
         }
 
         return false;
-
     }
 
     private String piece_symbol(int piece) {
