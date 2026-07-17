@@ -53,16 +53,27 @@ public class board_render extends JPanel {
                 //
                 // Gameplay Loop Logic handling if engine is playing or not 
                 // 
-                if(mode == 2){
+                if(mode == 2 && selected_col != -1){
                     // note : if mode == 2 white_to_move is essentially always true
                     // this just means that white playing triggers a response from the engine which plays black
                     // the engine then returns the best move it found and then the board is moved accordingly
                     if(white_to_move){
                         handle_click(row, column);
+                        System.out.println("Generating Engine Move");
                         // Play Engine Move :
                         int[] engine_move = engine.move(board_state); 
+                        System.out.println("Generated Move : "  + engine_move[0] + engine_move[1] + engine_move[2] + engine_move[3]);
+                        
+                        // Right now some issue with validation moves because the engine logic isn't implemented yet
+                        // but should be fixewd in the future
                         board_state[engine_move[0]][engine_move[1]] = board_state[engine_move[2]][engine_move[3]];
-                        board_state[engine_move[2]][engine_move[3]] = 0;
+                        if(engine_move[0] != engine_move[2] || engine_move[1] != engine_move[3]){board_state[engine_move[2]][engine_move[3]] = 0;}
+                        white_to_move = true;    
+                    }
+                    else{
+
+                        // temporary handling before engine plays move
+                        handle_click(row, column);
                     }
                 }
                 else {
@@ -225,8 +236,8 @@ public class board_render extends JPanel {
         }
     }
 
-    // Render 8x8 board and place pieces according to board_state
-    @Override
+    // Render 8x8 board and place pieces according to board_state 
+    @Override // Overrides JPanel's default paintComponent() method
     protected void paintComponent(Graphics graphic_in) {
         super.paintComponent(graphic_in);
         Graphics2D board = (Graphics2D) graphic_in;
@@ -243,9 +254,11 @@ public class board_render extends JPanel {
                 if (row == selected_row && col == selected_col) {
                     board.setColor(new Color(130, 180, 120)); // selected square
                 } else if ((row + col) % 2 == 0) {
-                    board.setColor(new Color(240, 217, 181)); // light squares
+                    // board.setColor(new Color(240, 217, 181)); // light squares
+                     board.setColor(new Color(240, 240,240)); 
                 } else {
-                    board.setColor(new Color(181, 136, 99));  // dark squares
+                    // board.setColor(new Color(181, 136, 99));  // dark squares
+                    board.setColor(new Color(140, 140, 140));  // dark squares
                 }
 
                 board.fillRect(col * space_size, row * space_size, space_size, space_size);

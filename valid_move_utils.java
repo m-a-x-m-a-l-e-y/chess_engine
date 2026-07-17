@@ -9,6 +9,16 @@ public class valid_move_utils {
     private int w_king_row = 7;
     private int w_king_col = 4;
 
+
+    //
+    //
+    //  TO DO : 
+    // - Add check sensitivity to knights, currently the only piece not considered
+    // - add checkmate analysis -> a pre-task to this would be to add a way to check for valid moves
+    // 
+    //
+
+
     // ==========================================================================
     // PAWN
     // ==========================================================================
