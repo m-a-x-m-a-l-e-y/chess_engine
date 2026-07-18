@@ -35,11 +35,11 @@ public class board_render extends JPanel {
     private int b_king_col = 4;
     private int w_king_row = 7;
     private int w_king_col = 4;
-
+    private final int ELO = 1000; 
     public board_render(int[][] board_state_in, int mode) {
         this.board_state = board_state_in;
         this.mode = mode; // -> assign player versus player or player vs engine
-        this.engine = new chess_engine(mode);
+        this.engine = new chess_engine(ELO);
         Dimension dimension = new Dimension(8 * space_size, 8 * space_size);
         this.setPreferredSize(dimension);
 
@@ -53,7 +53,7 @@ public class board_render extends JPanel {
                 //
                 // Gameplay Loop Logic handling if engine is playing or not 
                 // 
-                if(mode == 2 && selected_col != -1){
+                if(mode == 2 && selected_col != -1 && !(column == selected_col && row == selected_row)){
                     // note : if mode == 2 white_to_move is essentially always true
                     // this just means that white playing triggers a response from the engine which plays black
                     // the engine then returns the best move it found and then the board is moved accordingly
@@ -61,17 +61,17 @@ public class board_render extends JPanel {
                         handle_click(row, column);
                         System.out.println("Generating Engine Move");
                         // Play Engine Move :
-                        int[] engine_move = engine.move(board_state); 
-                        System.out.println("Generated Move : "  + engine_move[0] + engine_move[1] + engine_move[2] + engine_move[3]);
+                        move_gen.Move engine_move = engine.move(board_state, white_to_move);
+                        repaint(); 
+                        System.out.println("Generated Move : "  + engine_move.fromR + engine_move.fromC + engine_move.toR + engine_move.toC);
                         
-                        // Right now some issue with validation moves because the engine logic isn't implemented yet
-                        // but should be fixewd in the future
-                        board_state[engine_move[0]][engine_move[1]] = board_state[engine_move[2]][engine_move[3]];
-                        if(engine_move[0] != engine_move[2] || engine_move[1] != engine_move[3]){board_state[engine_move[2]][engine_move[3]] = 0;}
+
+                        board_state[engine_move.toR][engine_move.toC] = board_state[engine_move.fromR][engine_move.fromC];
+                        board_state[engine_move.fromR][engine_move.fromC] = 0;
                         white_to_move = true;    
                     }
                     else{
-
+                        System.out.println("WATITING");
                         // temporary handling before engine plays move
                         handle_click(row, column);
                     }
