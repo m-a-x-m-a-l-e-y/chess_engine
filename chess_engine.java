@@ -1,17 +1,28 @@
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
-
+import java.util.Map;
 public class chess_engine {
     private int[][] board_state;
     private int elo;
+    private Map<Integer, Integer> piece_enum;
 
     public chess_engine(int elo){
         this.board_state = new int[8][8];
         this.elo = elo;
+        this.piece_enum = new HashMap<>();
+        piece_enum.put(0,0); 
+        piece_enum.put(1,1); 
+        piece_enum.put(2,5); 
+        piece_enum.put(3,3); 
+        piece_enum.put(4,3); 
+        piece_enum.put(5,9); 
+        piece_enum.put(6,10); 
     }
     
     public move_gen.Move move(int[][] board_state, boolean whites_move){
         System.out.println("Move");
+        long startTime = System.nanoTime();
         this.board_state = board_state;
         int depth;
         move_gen.Move best_move = null;
@@ -48,6 +59,8 @@ public class chess_engine {
 
             }
             System.out.println("done");
+            long elapsed = System.nanoTime() - startTime;
+            System.out.println("Engine move generated in " + (elapsed / 1_000_000.0) + " ms");
             return best_move;
         }
         
@@ -95,27 +108,16 @@ public class chess_engine {
         int score = 0;
         for(int i = 0; i < 8; i++){
             for(int j = 0; j < 8; j++){
-                score += board_state[i][j];
+                int piece = board_state[i][j];
+                if(piece < 0){
+                    score -= piece_enum.get(Math.abs(piece));
+                }
+                else{
+                    score += piece_enum.get(Math.abs(piece));
+                }
             }
         }   
         return score;
-    }
-
-    public void compute_values(int row, int col){
-        // at this point we have a piece to evaluate the value of each move 
-        // strategy : keep track of current best move, as well as current best move of other side 
-        int max = 0;
-        int min = 0;
-
-        int piece = board_state[row][col];
-
-        if(piece == -2){
-            for(int i = 0; i < 3; i++){
-                // TODO: evaluate_knight isn't implemented yet
-                // evaluate_knight(row, col);
-            }
-        }
-        
     }
 
     // make_move invariant is that the move_ is expected to be valid

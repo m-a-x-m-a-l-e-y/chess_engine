@@ -208,6 +208,7 @@ public class valid_move_utils {
 
     public boolean white_bishop(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         // don't arrive at a square where there is a white space
+        if(Math.abs(to_row - from_row ) != Math.abs(to_col - from_col)){return false;}
         if(board_state[to_row][to_col] > 0){ return false;}
 
         // the from_row/from_col below are walked toward the target, so remember the
@@ -272,6 +273,7 @@ public class valid_move_utils {
     }
 
     public boolean black_bishop(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
+        if(Math.abs(to_row - from_row ) != Math.abs(to_col - from_col)){return false;}
         // don't arrive at a square where there is a white space
         if(board_state[to_row][to_col] < 0){ return false;}
 
@@ -350,19 +352,43 @@ public class valid_move_utils {
 
     // ==========================================================================
     // KING
+    //
+    // # Current bugs with king movement [these are relatively non-common instances so have been backlogged]: 
+    // - you can castle through check
+    // - you can castle if your rook or king has moved but are now in the right spaces again
+    //
     // ==========================================================================
 
     public boolean white_king(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
-        if(board_state[to_row][to_col] > 0 ){ return false; }
-        if(Math.abs(to_row - from_row) > 1 || Math.abs(to_col - from_col) > 1 ){ return false; }
+        if((from_col == 4 && from_row == 7 && to_col == 6 && to_row == 7 && board_state[7][7] == 2)){
+            // kingside castle
+            System.out.println("kingside");
+            if(!(white_rook(board_state, 7,7,from_row, 5))){
+                return false;
+            }
+        }
+        else if (from_col == 4 && from_row == 7 && to_col == 2 && to_row == 7 && board_state[7][0] == 2){
+            // queenside castle
+            if(!(white_rook(board_state, 7,0,from_row, 3))){
+                return false;
+            }
+        }
+        else{
+            if(board_state[to_row][to_col] > 0 ){ return false; }
+            if(Math.abs(to_row - from_row) > 1 || Math.abs(to_col - from_col) > 1 ){ return false; }
 
+            
+        }
+        
+        
+        
         // simulate the king move on a copy (king removed from origin) and check the
         // destination is not seen by an opposing piece
         int[][] b = copy_board(board_state);
         b[to_row][to_col]     = b[from_row][from_col];
         b[from_row][from_col] = 0;
         boolean safe = !checked_by_black(b, to_row, to_col);
-
+        
         // move is legal, update the tracked white king position
         if(safe){
             w_king_row = to_row;
@@ -372,8 +398,22 @@ public class valid_move_utils {
     }
 
     public boolean black_king(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
-        if(board_state[to_row][to_col] < 0 ){ return false; }
-        if(Math.abs(to_row - from_row) > 1 || Math.abs(to_col - from_col) > 1 ){ return false; }
+        if((from_col == 4 && from_row == 0 && to_col == 6 && to_row == 0 && board_state[0][7] == -2)){
+            // kingside castle
+            if(!(black_rook(board_state, 0,7,from_row, 5))){
+                return false;
+            }
+        }
+        else if (from_col == 4 && from_row == 0 && to_col == 2 && to_row == 0 && board_state[0][0] == -2){
+            // queenside castle
+            if(!(black_rook(board_state, 0,0,from_row, 3))){
+                return false;
+            }
+        }
+        else{
+            if(board_state[to_row][to_col] < 0 ){ return false; }
+            if(Math.abs(to_row - from_row) > 1 || Math.abs(to_col - from_col) > 1 ){ return false; }
+        }
 
         // simulate the king move on a copy (king removed from origin) and check the
         // destination is not seen by an opposing piece
