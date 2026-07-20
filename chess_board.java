@@ -52,7 +52,7 @@ public class chess_board {
 
     private void render_board(int mode){
         SwingUtilities.invokeLater(() -> {
-            JFrame frame = new JFrame("Chessboard from 2D Array");
+            JFrame frame = new JFrame("Max's Chess Engine");
             board_render boardPanel = new board_render(this.brd, mode);
 
             frame.add(boardPanel);
@@ -66,7 +66,7 @@ public class chess_board {
 
     // Running the game is encompassed in this main function
     public static void main(String[] args) {
-        int mode = 1;
+        int mode = 2;
         if(mode == 1){
             chess_board board = new chess_board(); 
             board.render_board(mode); // renders board and adds rules
