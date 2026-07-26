@@ -20,21 +20,25 @@ public class board_render extends JPanel {
     // 5: queen 
     // 6: king
 
-    private int mode;
+    private int mode; // not used because mode is only used within the constructor for creating mouselistener
     private int[][] board_state;
     private final int space_size = 100;
     private int selected_row = -1; // -1 :  nothing selected
     private int selected_col = -1;
     private boolean white_to_move = true;
-    private boolean in_check = false;
+    private boolean in_check = false; // deprecated because of king_safety check
     private chess_engine engine;
     private valid_move_utils validator = new valid_move_utils();
-    // Constant reference to where the kings are 
+
+    // Constant references to where the kings are 
     // for evaluation of check and checkmate
-    private int b_king_row = 0;
-    private int b_king_col = 4;
-    private int w_king_row = 7;
-    private int w_king_col = 4;
+        private int b_king_row = 0;
+        private int b_king_col = 4;
+        private int w_king_row = 7;
+        private int w_king_col = 4;
+    // ===========================================
+
+    private boolean game_ended = false;
     private final int ELO = 1000; 
     public board_render(int[][] board_state_in, int mode) {
         this.board_state = board_state_in;
@@ -47,38 +51,51 @@ public class board_render extends JPanel {
         this.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent clicked){
-                int column = clicked.getX() / space_size;
-                int row = clicked.getY() / space_size;
-
+                int x = clicked.getX();
+                int y = clicked.getY();
+                if(!(x > 0 && x < 800 && y > 0 && y < 800 )){return;} // Handles out of bounds clicks
+                int column = x / space_size;
+                int row = y / space_size;
                 //
                 // Gameplay Loop Logic handling if engine is playing or not 
                 // 
-                if(mode == 2 && selected_col != -1 && !(column == selected_col && row == selected_row)){
-                    // note : if mode == 2 white_to_move is essentially always true
-                    // this just means that white playing triggers a response from the engine which plays black
-                    // the engine then returns the best move it found and then the board is moved accordingly
-                    if(white_to_move){
-                        handle_click(row, column);
-                        System.out.println("Generating Engine Move");
-                        // Play Engine Move :
-                        move_gen.Move engine_move = engine.move(board_state, white_to_move);
-                        repaint(); 
-                        System.out.println("Generated Move : "  + engine_move.fromR + engine_move.fromC + engine_move.toR + engine_move.toC);
-                        
-
-                        board_state[engine_move.toR][engine_move.toC] = board_state[engine_move.fromR][engine_move.fromC];
-                        board_state[engine_move.fromR][engine_move.fromC] = 0;
-                        white_to_move = true;    
+                if(!game_ended){
+                    if(mode == 2 && selected_col != -1 && !(column == selected_col && row == selected_row)){
+                        // note : if mode == 2 white_to_move is essentially always true
+                        // this just means that white playing triggers a response from the engine which plays black
+                        // the engine then returns the best move it found and then the board is moved accordingly
+                        if(white_to_move){
+                            if(handle_click(row, column)){ // handle_click returns whether a move actually occurs
+                                repaint(); 
+                                System.out.println("Generating Engine Move");
+                                // Play Engine Move :
+                                move_gen.Move engine_move = engine.move(board_state, white_to_move);
+                                System.out.println("Generated Move : "  + engine_move.fromR + engine_move.fromC + engine_move.toR + engine_move.toC);
+                                board_state[engine_move.toR][engine_move.toC] = board_state[engine_move.fromR][engine_move.fromC];
+                                board_state[engine_move.fromR][engine_move.fromC] = 0;
+                                // castling comes back as a two-square king move, bring the rook with it
+                                if(Math.abs(board_state[engine_move.toR][engine_move.toC]) == 6
+                                   && Math.abs(engine_move.toC - engine_move.fromC) == 2){
+                                    int rook_from = (engine_move.toC == 6) ? 7 : 0;
+                                    int rook_to   = (engine_move.toC == 6) ? 5 : 3;
+                                    board_state[engine_move.toR][rook_to]   = board_state[engine_move.toR][rook_from];
+                                    board_state[engine_move.toR][rook_from] = 0;
+                                }
+                                white_to_move = true;   
+                                repaint(); 
+                            }
+                        }
+                        else{
+                            // temporary handling is deprecated but exists for implementation of engine playing as white
+                            System.out.println("WATITING");
+                            handle_click(row, column);
+                        }
                     }
-                    else{
-                        System.out.println("WATITING");
-                        // temporary handling before engine plays move
+                    else {
                         handle_click(row, column);
                     }
                 }
-                else {
-                    handle_click(row, column);
-                }
+                
                 
             }
         });
@@ -88,10 +105,10 @@ public class board_render extends JPanel {
         return (white_to_move && piece > 0) || (!white_to_move && piece < 0);
     }
 
-    private void handle_click(int row, int col) {
-         
-        int clicked_piece = board_state[row][col];
+    private boolean handle_click(int row, int col) {
         
+        int clicked_piece = board_state[row][col];
+        boolean move_occurs = false;
         if (selected_row == -1) {
             // Case 1: the player hasn'row selected a piece yet
             // Nothing selected yet: select this square if it holds a piece
@@ -102,30 +119,25 @@ public class board_render extends JPanel {
             }
         } 
         else {
-            int selected_piece = board_state[selected_row][selected_col];
-
-
             // Case 2: the player has selected a piece and this is trying to move that piece to the new row and col
             if (row == selected_row && col == selected_col) {
                 selected_row = -1;
                 selected_col = -1;
+                
             } else if (clicked_piece != 0 && piece_belongs_to_mover(clicked_piece)) {
                 selected_row = row;
                 selected_col = col;
             } else if (is_valid_move(selected_row, selected_col, row, col)) {
-
-                // we can just move all the logic to valid_move_utils by checking if the respective side's king is now in check, if so, it is not a valid move
-                // if(in_check){
-                //     int[][] hypothetical = board_state.clone();
-                //     hypothetical[row][col] = hypothetical[selected_row][selected_col];
-                //     if(white_to_move){
-
-                //     }
-                // }
+                move_occurs = true;
 
                 int moved_piece = board_state[selected_row][selected_col];
                 board_state[row][col] = moved_piece;
                 board_state[selected_row][selected_col] = 0;
+                if(moved_piece == 1 && row == 0){
+                    promote_pawn(row,col, this.white_to_move);
+                }
+
+
                 if(white_to_move){ 
                     if(is_valid_move(row, col, b_king_row, b_king_col)){
                        in_check = true; // -> refactor this logic
@@ -143,15 +155,40 @@ public class board_render extends JPanel {
                     }
                 }
                 
+                
                 // reset selected moves and alternate turns
                 selected_row = -1;
                 selected_col = -1;
                 white_to_move = !white_to_move;
+
+                // Check if the opponent has any legal moves * if not checkmate or stalemate, either way ends the game
+                // if(move_gen.generateLegalMoves(board_state, white_to_move).size() == 0){
+                //     System.out.println("Checkmate status check!");
+                //     this.game_ended = true;
+                //     return true;
+                // }
+
+                System.out.println(white_to_move);
                 System.out.println(w_king_row + "w" + w_king_col);
                 System.out.println(b_king_row + "b" + b_king_col);
             }
+            
+
         }
         // redraw board for changes
+        repaint();
+        return move_occurs;
+    }
+    private void promote_pawn(int row, int col, boolean is_white){
+        // create a prompt at the row, col of the promoting pawn
+        if(is_white){
+            board_state[row][col] = 5;
+            
+        }
+        else{
+            board_state[row][col] = -5;
+        }
+
         repaint();
     }
 
@@ -199,10 +236,22 @@ public class board_render extends JPanel {
         else if(selected_piece == 6){
             boolean valid = validator.white_king(board_state, from_row, from_col, to_row, to_col);
             // tracking king's position for check related calculations
+
             if(valid){
                 w_king_col = to_col;
                 w_king_row = to_row; 
+                // Kingside castle
+                if((to_col - from_col) == 2){
+                    board_state[7][5] = 2;
+                    board_state[7][7] = 0;
+                }
+                // Queenside castle
+                else if((to_col - from_col) == -2){
+                    board_state[7][3] = 2;
+                    board_state[7][0] = 0;
+                }
             }
+            
             return valid;
         }
         else if (selected_piece == -6){
