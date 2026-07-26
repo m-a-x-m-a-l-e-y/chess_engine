@@ -22,8 +22,11 @@ Current best draw : 1600 ELO
  
 ## Part two : Building an engine 🏎️ ##
  This engine uses a 2D integer matrix with alpha-beta tree pruning search variation of the minimax algorithm. Current search depth is 6
- Right now the game is being built around the player only playing white and the engine only playing black, this is to minimize overhead code in creating the engine's move responses, gameplay loop will be adapted to support both
  Performance : Currently plays at about 1500 ELO with pretty good tactical awareness but lower skill in long term strategy
+
+ Notes about the engine : 
+ Right now the game is being built around the player only playing white and the engine only playing black, this is to minimize overhead code in creating the engine's move responses, gameplay loop will be adapted to support both
+
 
 # How to run for yourself: 
 1. Clone this repo
@@ -32,6 +35,7 @@ Current best draw : 1600 ELO
 # Future Plans : #
  Bitboard implementation to create searches fast enough for a deeper/better engine \
  Server set up to enable web socket connections and playing against players online
+ Computer vision integration to be able to place against a video feed
 
 
 
