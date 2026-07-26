@@ -1,5 +1,7 @@
 import java.util.ArrayList;
 import java.util.List;
+// This file is vibecoded unlike other files
+
 
 // Legal move generation for one side.
 // Board encoding (matches chess_board.java):
@@ -12,7 +14,7 @@ import java.util.List;
 // that leaves the mover's own king attacked. King safety lives in exactly one
 // place (leavesKingInCheck / isAttacked).
 //
-// TODO (not yet handled): castling, en passant, under-promotion. A pawn
+// TODO (not yet handled): en passant, under-promotion. A pawn
 // reaching the last rank is emitted as an ordinary move for now (auto-queen
 // can be applied when the move is played).
 public class move_gen {
@@ -53,7 +55,8 @@ public class move_gen {
                     case 3: hop(board, r, c, KNIGHT_OFFS,   forWhite, pseudo); break;
                     case 4: slide(board, r, c, BISHOP_DIRS, forWhite, pseudo); break;
                     case 5: slide(board, r, c, ALL_DIRS,    forWhite, pseudo); break;
-                    case 6: hop(board, r, c, ALL_DIRS,      forWhite, pseudo); break;
+                    case 6: hop(board, r, c, ALL_DIRS,      forWhite, pseudo);
+                            castle(board, r, c,             forWhite, pseudo); break;
                     default: break;
                 }
             }
@@ -69,6 +72,40 @@ public class move_gen {
     // =====================================================================
     // PSEUDO-LEGAL GENERATORS (geometry only, ignore own-king safety)
     // =====================================================================
+
+    // Castling, emitted as a two-square king move (e1g1 / e1c1). Whoever plays
+    // the move is responsible for hopping the rook over as well (see
+    // chess_engine.make_move).
+    //
+    // There is no castling-rights state to consult -- a position here is a bare
+    // int[8][8] with no move history -- so rights are inferred from placement:
+    // king home, rook home, gap empty. Same approximation valid_move_utils
+    // makes: a king that walks off e1 and back could still castle.
+    static void castle(int[][] b, int r, int c, boolean white, List<Move> out){
+        int homeRow = white ? 7 : 0;
+        int king    = white ? 6 : -6;
+        int rook    = white ? 2 : -2;
+
+        if(r != homeRow || c != 4 || b[r][c] != king){ return; }
+        if(isAttacked(b, homeRow, 4, !white)){ return; }   // may not castle out of check
+
+        // kingside: f and g empty, king crosses f
+        if(b[homeRow][7] == rook
+           && b[homeRow][5] == 0 && b[homeRow][6] == 0
+           && !isAttacked(b, homeRow, 5, !white)){
+            out.add(new Move(homeRow, 4, homeRow, 6));
+        }
+
+        // queenside: b, c and d empty, king crosses d (b is only the rook's
+        // path, so it may be attacked)
+        if(b[homeRow][0] == rook
+           && b[homeRow][1] == 0 && b[homeRow][2] == 0 && b[homeRow][3] == 0
+           && !isAttacked(b, homeRow, 3, !white)){
+            out.add(new Move(homeRow, 4, homeRow, 2));
+        }
+        // the destination square itself is checked by the leavesKingInCheck
+        // filter in generateLegalMoves, like every other move
+    }
 
     // Non-sliding pieces (knight, king): fixed offset list, one step each.
     static void hop(int[][] b, int r, int c, int[][] offs, boolean white, List<Move> out){
