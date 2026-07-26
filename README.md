@@ -2,6 +2,10 @@
 
 <img width="460" height="460" alt="image" src="https://github.com/user-attachments/assets/ce3aaf0f-b7c8-4e15-889b-4133781e97a8" />
 
+# Demo [VS 1000 ELO bot] ~6 min : https://drive.google.com/file/d/1_AV86W1jVaQUpVcjPmrMQ_HSGRFAbrkx/view # 
+Current best win : 1500 ELO
+Current best draw : 1600 ELO
+
 #   High Level Overview : #
  A visual chess interface that enables playing against a chess engine or another player \
  
