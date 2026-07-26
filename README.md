@@ -20,13 +20,14 @@ Current best draw : 1600 ELO
  Inputs get sent to validity checkers that determine whether or not a move that is tried is legal -> illegal move trigger nothing, legal moves alter the board state and repaints panel
  
  
-## Part two : Building an engine 🏎️  -- UNDER CONSTRUCTION ⚠️ ##
- This engine uses a 2D integer matrix with alpha-beta tree pruning search variation of the minimax algorithm 
- Right now the game is being built around the player only playing white and the engine only playing black, this is to minimize overhead in creating the engine's move responses, gameplay loop will be adapted to support both
+## Part two : Building an engine 🏎️ ##
+ This engine uses a 2D integer matrix with alpha-beta tree pruning search variation of the minimax algorithm. Current search depth is 6
+ Right now the game is being built around the player only playing white and the engine only playing black, this is to minimize overhead code in creating the engine's move responses, gameplay loop will be adapted to support both
+ Performance : Currently plays at about 1500 ELO with pretty good tactical awareness but lower skill in long term strategy
 
 # How to run for yourself: 
 1. Clone this repo
-2. In powershell use run.ps1 in the project directory (bash script will be added when chess engine is ready)
+2. In powershell use run.ps1/run.sh in the project directory
 
 # Future Plans : #
  Bitboard implementation to create searches fast enough for a deeper/better engine \
