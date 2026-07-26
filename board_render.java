@@ -73,6 +73,14 @@ public class board_render extends JPanel {
                                 System.out.println("Generated Move : "  + engine_move.fromR + engine_move.fromC + engine_move.toR + engine_move.toC);
                                 board_state[engine_move.toR][engine_move.toC] = board_state[engine_move.fromR][engine_move.fromC];
                                 board_state[engine_move.fromR][engine_move.fromC] = 0;
+                                // castling comes back as a two-square king move, bring the rook with it
+                                if(Math.abs(board_state[engine_move.toR][engine_move.toC]) == 6
+                                   && Math.abs(engine_move.toC - engine_move.fromC) == 2){
+                                    int rook_from = (engine_move.toC == 6) ? 7 : 0;
+                                    int rook_to   = (engine_move.toC == 6) ? 5 : 3;
+                                    board_state[engine_move.toR][rook_to]   = board_state[engine_move.toR][rook_from];
+                                    board_state[engine_move.toR][rook_from] = 0;
+                                }
                                 white_to_move = true;   
                                 repaint(); 
                             }
