@@ -7,10 +7,26 @@ public class chess_engine {
     private int elo;
     private double[] piece_enum;
     private double[][] center_bias;
-    private int search_depth = 6;
+    private double[][] pawn_bias;
+    private int search_depth = 4;
+    // the last few moves the engine itself played, oldest overwritten first.
+    // used to keep it from playing the same move a third time and repeating the position.
+    private static final int HISTORY_SIZE = 6;
+    private move_gen.Move[] recent_moves = new move_gen.Move[HISTORY_SIZE];
+    private int recent_index = 0; // next slot to overwrite, wraps around
 
     public chess_engine(int elo){
         this.board_state = new int[8][8];
+        this.pawn_bias = new double[][]{
+            {0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00},
+            {0.10,0.10,0.10,0.10,0.10,0.10,0.10,0.10},
+            {0.20,0.20,0.20,0.20,0.20,0.20,0.20,0.20},
+            {0.30,0.30,0.30,0.30,0.30,0.30,0.30,0.30},
+            {0.40,0.40,0.40,0.40,0.40,0.40,0.40,0.40},
+            {0.50,0.50,0.50,0.50,0.50,0.50,0.50,0.50},
+            {0.60,0.60,0.60,0.60,0.60,0.60,0.60,0.60},
+            {0.70,0.70,0.70,0.70,0.70,0.70,0.70,0.70}
+        };
         this.center_bias = new double[][] {
             {0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00},
             {0.00,0.10,0.10,0.10,0.10,0.10,0.10,0.00},
@@ -46,11 +62,15 @@ public class chess_engine {
         if(this.elo == 1000){
             // search_depth = 6;
 
+            List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move);
+            // throw out anything already played twice in the last HISTORY_SIZE moves, that
+            // third occurence is what completes a threefold repetition
+            List<move_gen.Move> candidates = filter_repetitions(legal_moves);
+
             if(whites_move){
-                List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move);
                 double best_score = Integer.MIN_VALUE;
-                
-                for(move_gen.Move move_ : legal_moves){
+
+                for(move_gen.Move move_ : candidates){
                     int[][] next_board = make_move(board_state, move_);
                     // find the score of the next board, which is the move that appears with this current 'move_'
                     // the parameter is false here because this function is called after a player plays a move, 
@@ -72,9 +92,8 @@ public class chess_engine {
                 }
             }
             else{
-                List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move);
                 double best_score = Integer.MAX_VALUE;
-                for(move_gen.Move move_ : legal_moves){
+                for(move_gen.Move move_ : candidates){
                     int[][] next_board = make_move(board_state, move_);
                     double score = minimax(next_board, true, search_depth - 1,  alpha, beta); // find the score of the next board, which is the move that appears with this current 'move_'
                     
@@ -89,11 +108,47 @@ public class chess_engine {
             System.out.println("done");
             long elapsed = System.nanoTime() - startTime;
             System.out.println("Engine move generated in " + (elapsed / 1_000_000.0) + " ms");
+            // best_move is null when there were no legal moves at all (checkmate/stalemate)
+            if(best_move != null){
+                record_move(best_move);
+            }
             return best_move;
         }
-        
+
         return null;
-        
+
+    }
+
+    // move_gen.Move has no equals(), so the from/to squares get compared directly
+    private boolean same_move(move_gen.Move a, move_gen.Move b){
+        return a.fromR == b.fromR && a.fromC == b.fromC
+            && a.toR   == b.toR   && a.toC   == b.toC;
+    }
+
+    // how many of the last HISTORY_SIZE engine moves were this same move
+    private int repetition_count(move_gen.Move move_){
+        int count = 0;
+        for(move_gen.Move past : recent_moves){
+            if(past != null && same_move(past, move_)){
+                count++;
+            }
+        }
+        return count;
+    }
+
+    private void record_move(move_gen.Move move_){
+        recent_moves[recent_index] = move_;
+        recent_index = (recent_index + 1) % HISTORY_SIZE;
+    }
+
+    private List<move_gen.Move> filter_repetitions(List<move_gen.Move> legal_moves){
+        List<move_gen.Move> candidates = new ArrayList<>();
+        for(move_gen.Move move_ : legal_moves){
+            if(repetition_count(move_) < 2){
+                candidates.add(move_);
+            }
+        }
+        return candidates.isEmpty() ? legal_moves : candidates;
     }
 
     public double minimax(int[][] board_state, boolean whites_move, int depth, double alpha, double beta){
@@ -172,12 +227,15 @@ public class chess_engine {
                     //     piecevalue = 1 * piece_enum[Math.abs(piece)];
                     // }
                     double piecevalue = 1 * piece_enum[(int) Math.abs(piece)];
+                    if(piecevalue == 1){
+                        piecevalue += this.pawn_bias[i][j];
+                    }
                     if(piecevalue != 20){ // 20 = KING
                         piecevalue += this.center_bias[i][j];
 
                     }
                     else{
-                        piecevalue -= this.center_bias[i][j];
+                        // piecevalue -= this.center_bias[i][j];
 
                     }
                     score -= piecevalue;

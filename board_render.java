@@ -71,7 +71,15 @@ public class board_render extends JPanel {
                                 // Play Engine Move :
                                 move_gen.Move engine_move = engine.move(board_state, white_to_move);
                                 System.out.println("Generated Move : "  + engine_move.fromR + engine_move.fromC + engine_move.toR + engine_move.toC);
-                                board_state[engine_move.toR][engine_move.toC] = board_state[engine_move.fromR][engine_move.fromC];
+                                if(engine_move.toR == 7 && board_state[engine_move.fromR][engine_move.fromC] == -1){
+                                    board_state[engine_move.toR][engine_move.toC] = -5;
+                                }
+                                else if(engine_move.toR == 0 && board_state[engine_move.fromR][engine_move.fromC] == 1){
+                                    board_state[engine_move.toR][engine_move.toC] = 5;
+                                }
+                                else{
+                                    board_state[engine_move.toR][engine_move.toC] = board_state[engine_move.fromR][engine_move.fromC];
+                                }
                                 board_state[engine_move.fromR][engine_move.fromC] = 0;
                                 // castling comes back as a two-square king move, bring the rook with it
                                 if(Math.abs(board_state[engine_move.toR][engine_move.toC]) == 6
