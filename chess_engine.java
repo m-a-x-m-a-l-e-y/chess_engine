@@ -8,7 +8,7 @@ public class chess_engine {
     private double[] piece_enum;
     private double[][] center_bias;
     private double[][] pawn_bias;
-    private int search_depth = 4;
+    private int search_depth = 6;
     // the last few moves the engine itself played, oldest overwritten first.
     // used to keep it from playing the same move a third time and repeating the position.
     private static final int HISTORY_SIZE = 6;
@@ -49,7 +49,13 @@ public class chess_engine {
         // piece_enum.put(6.0,10.0); 
     }
     
+    // no en passant available (the opponent's last move was not a double pawn push)
     public move_gen.Move move(int[][] board_state, boolean whites_move){
+        return move(board_state, whites_move, -1);
+    }
+
+    // ep_col is the file the opponent just double-pushed a pawn on, or -1 for none
+    public move_gen.Move move(int[][] board_state, boolean whites_move, int ep_col){
 
         System.out.println("Move");
         
@@ -62,10 +68,13 @@ public class chess_engine {
         if(this.elo == 1000){
             // search_depth = 6;
 
-            List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move);
+            List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move, ep_col);
             // throw out anything already played twice in the last HISTORY_SIZE moves, that
             // third occurence is what completes a threefold repetition
             List<move_gen.Move> candidates = filter_repetitions(legal_moves);
+            // the root loop has no cutoff break, but alpha/beta are still threaded into every
+            // child minimax call, so a strong first move here raises alpha and prunes the siblings
+            candidates = sort_moves_intuitively(board_state, candidates, whites_move);
 
             if(whites_move){
                 double best_score = Integer.MIN_VALUE;
@@ -76,7 +85,7 @@ public class chess_engine {
                     // the parameter is false here because this function is called after a player plays a move, 
                     // meaning that the whites_move boolean is actuall representative of the player who just 
                     // played rather than the player who is about to play.
-                    double score = minimax(next_board, false, search_depth - 1, alpha, beta);
+                    double score = minimax(next_board, false, search_depth - 1, alpha, beta, ep_after(board_state, move_));
 
 
                     // The way that alpha and beta work is that if it is black's turn, and we are now checkinga branch rightwards, if we reach a black value 
@@ -95,7 +104,7 @@ public class chess_engine {
                 double best_score = Integer.MAX_VALUE;
                 for(move_gen.Move move_ : candidates){
                     int[][] next_board = make_move(board_state, move_);
-                    double score = minimax(next_board, true, search_depth - 1,  alpha, beta); // find the score of the next board, which is the move that appears with this current 'move_'
+                    double score = minimax(next_board, true, search_depth - 1,  alpha, beta, ep_after(board_state, move_)); // find the score of the next board, which is the move that appears with this current 'move_'
                     
                     beta = Math.min(beta,score);
                     if(score < best_score){
@@ -151,11 +160,26 @@ public class chess_engine {
         return candidates.isEmpty() ? legal_moves : candidates;
     }
 
+    // a double pawn push is the only thing that grants the opponent an en passant reply.
+    // reads the pre-move board on purpose, the from square is empty once the move is applied
+    private int ep_after(int[][] board_state, move_gen.Move move_){
+        if(Math.abs(board_state[move_.fromR][move_.fromC]) == 1
+           && Math.abs(move_.toR - move_.fromR) == 2){
+            return move_.toC;
+        }
+        return -1;
+    }
+
+    // no en passant available at this node
     public double minimax(int[][] board_state, boolean whites_move, int depth, double alpha, double beta){
+        return minimax(board_state, whites_move, depth, alpha, beta, -1);
+    }
+
+    public double minimax(int[][] board_state, boolean whites_move, int depth, double alpha, double beta, int ep_col){
         if(depth == 0){
             return evaluate(board_state);
         }
-        List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move);
+        List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move, ep_col);
         if(legal_moves.size() == 0){
             // Right now checkmates are valued equally no matter
             // which one is faster, 
@@ -168,6 +192,13 @@ public class chess_engine {
         }
         
         else{
+            // search the promising moves first so the alpha >= beta cutoff below fires early and
+            // the rest of the list never gets expanded. only worth it when the subtrees underneath
+            // are expensive, at depth 1 every child is just an evaluate() call and the sort would
+            // cost about as much as it saves.
+            if(depth >= 2){
+                legal_moves = sort_moves_intuitively(board_state, legal_moves, whites_move);
+            }
             if(whites_move){
 
                 // List<move_gen.Move> legal_moves = move_gen.generateLegalMoves(board_state, whites_move);
@@ -181,8 +212,8 @@ public class chess_engine {
                     // meaning that the whites_move boolean is actuall representative of the player who just 
                     // played rather than the player who is about to play.
 
-                    double score = minimax(next_board, false, depth - 1, alpha, beta);
-                    
+                    double score = minimax(next_board, false, depth - 1, alpha, beta, ep_after(board_state, move_));
+
                     if(score >  best_score){
                         best_score = score; 
                     }
@@ -199,7 +230,7 @@ public class chess_engine {
                 double best_score = Integer.MAX_VALUE;
                 for(move_gen.Move move_ : legal_moves){
                     int[][] next_board = make_move(board_state, move_);
-                    double score = minimax(next_board, true, depth - 1, alpha, beta); // find the score of the next board, which is the move that appears with this current 'move_'
+                    double score = minimax(next_board, true, depth - 1, alpha, beta, ep_after(board_state, move_)); // find the score of the next board, which is the move that appears with this current 'move_'
                     if(score < best_score){
                         best_score = score; 
                     }
@@ -213,19 +244,88 @@ public class chess_engine {
             }
         }
     }
-    
+
+    // pairs a move with its ordering score so the score is computed once per move
+    // rather than once per comparison
+    private static class scored_move {
+        final move_gen.Move move_;
+        final double score;
+        scored_move(move_gen.Move move_, double score){
+            this.move_ = move_;
+            this.score = score;
+        }
+    }
+
+    // orders legal_moves so the moves most likely to be good get searched first, which is what
+    // makes the alpha-beta cutoff in minimax actually pay off. the tiers, best first:
+    //   captures    - cheapest attacker taking the most valuable victim (MVV-LVA)
+    //   promotions  - make_move auto queens, so this is roughly an 8 point swing
+    //   checks      - forcing, so the reply list is small
+    //   everything else, broken up by center_bias
+    // the scores are absolute (every piece read goes through Math.abs), so they say "how good is
+    // this for whoever is moving" and descending order is right for both the white and black
+    // branches. whites_move is only used to tell gives_check who is doing the attacking.
+    public List<move_gen.Move> sort_moves_intuitively(int[][] board_state, List<move_gen.Move> legal_moves, boolean whites_move){
+        // our move can never move their king, so this square is the same for every move in the list
+        int[] enemy_king = move_gen.findKing(board_state, !whites_move);
+
+        List<scored_move> scored = new ArrayList<>();
+        for(move_gen.Move move_ : legal_moves){
+            int mover  = board_state[move_.fromR][move_.fromC];
+            int victim = board_state[move_.toR][move_.toC];
+
+            // an en passant capture leaves the destination square empty, so it would otherwise
+            // score as a quiet move. the victim is always a pawn
+            boolean is_ep        = Math.abs(mover) == 1 && move_.fromC != move_.toC && victim == 0;
+            boolean is_capture   = victim != 0 || is_ep;
+            boolean is_promotion = Math.abs(mover) == 1 && (move_.toR == 0 || move_.toR == 7);
+
+            double score = 0;
+            if(is_capture){
+                double victim_value = is_ep ? piece_enum[1] : piece_enum[Math.abs(victim)];
+                // victim * 10 outweighs any attacker, so a pawn taking a queen (1000 + 90 - 1)
+                // sorts ahead of a queen taking a pawn (1000 + 10 - 9)
+                score += 1000 + victim_value * 10 - piece_enum[Math.abs(mover)];
+            }
+            if(is_promotion){
+                score += 500 + (piece_enum[5] - piece_enum[1]);
+            }
+            // gives_check copies the board, so only pay for it on the quiet moves. captures and
+            // promotions already sort above every check anyway
+            if(!is_capture && !is_promotion && gives_check(board_state, move_, whites_move, enemy_king)){
+                score += 100;
+            }
+            if(score == 0){
+                score = this.center_bias[move_.toR][move_.toC]; // free tiebreak among quiet moves
+            }
+            scored.add(new scored_move(move_, score));
+        }
+
+        // stable sort, so moves that tie keep generation order and the engine stays deterministic
+        scored.sort((a, b) -> Double.compare(b.score, a.score));
+
+        List<move_gen.Move> ordered = new ArrayList<>();
+        for(scored_move s : scored){
+            ordered.add(s.move_);
+        }
+        return ordered;
+    }
+
+    // does this move leave the opposing king attacked? make_move is reused rather than a hand
+    // rolled copy so the castling rook hop and the auto queen are both accounted for, and it
+    // copies instead of mutating so board_state is left alone
+    private boolean gives_check(int[][] board_state, move_gen.Move move_, boolean whites_move, int[] enemy_king){
+        if(enemy_king == null){ return false; } // no king on board (test positions)
+        int[][] next_board = make_move(board_state, move_);
+        return move_gen.isAttacked(next_board, enemy_king[0], enemy_king[1], whites_move);
+    }
+
     public double evaluate(int[][] board_state){
         double score = 0;
         for(int i = 0; i < 8; i++){
             for(int j = 0; j < 8; j++){
                 double piece = board_state[i][j];
                 if(piece < 0){
-                    // if(piece == -1 && i == 7){
-                    //     piecevalue = 9;
-                    // }
-                    // else{
-                    //     piecevalue = 1 * piece_enum[Math.abs(piece)];
-                    // }
                     double piecevalue = 1 * piece_enum[(int) Math.abs(piece)];
                     if(piecevalue == 1){
                         piecevalue += this.pawn_bias[i][j];
@@ -266,6 +366,14 @@ public class chess_engine {
         int[][] new_state = new int[8][];
         for(int i = 0; i < 8; i++){
             new_state[i] = board_state[i].clone();
+        }
+        // en passant: a pawn moving diagonally onto an empty square can only be en passant,
+        // and the captured pawn is beside the destination rather than on it. must run before
+        // the destination is overwritten
+        if(Math.abs(new_state[move_.fromR][move_.fromC]) == 1
+           && move_.fromC != move_.toC
+           && new_state[move_.toR][move_.toC] == 0){
+            new_state[move_.fromR][move_.toC] = 0;
         }
         new_state[move_.toR][move_.toC] = new_state[move_.fromR][move_.fromC];
         new_state[move_.fromR][move_.fromC] = 0;

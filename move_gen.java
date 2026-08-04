@@ -14,9 +14,13 @@ import java.util.List;
 // that leaves the mover's own king attacked. King safety lives in exactly one
 // place (leavesKingInCheck / isAttacked).
 //
-// TODO (not yet handled): en passant, under-promotion. A pawn
+// TODO (not yet handled): under-promotion. A pawn
 // reaching the last rank is emitted as an ordinary move for now (auto-queen
 // can be applied when the move is played).
+//
+// En passant depends on the previous move, which a bare int[8][8] cannot express, so
+// generateLegalMoves takes an ep_col: the file the opponent just double-pushed a pawn
+// on, or -1 for none. The rank is implied by whose turn it is, so one int is enough.
 public class move_gen {
 
     // ----- direction / offset tables -------------------------------------
@@ -42,7 +46,12 @@ public class move_gen {
     // PUBLIC ENTRY POINT
     // =====================================================================
 
+    // no en passant available (nobody just double-pushed)
     public static List<Move> generateLegalMoves(int[][] board, boolean forWhite){
+        return generateLegalMoves(board, forWhite, -1);
+    }
+
+    public static List<Move> generateLegalMoves(int[][] board, boolean forWhite, int ep_col){
         List<Move> pseudo = new ArrayList<>();
 
         for(int r = 0; r < 8; r++){
@@ -50,7 +59,7 @@ public class move_gen {
                 int p = board[r][c];
                 if(p == 0 || (p > 0) != forWhite){ continue; } // empty or not our piece
                 switch(Math.abs(p)){
-                    case 1: pawnMoves(board, r, c, forWhite, pseudo); break;
+                    case 1: pawnMoves(board, r, c, forWhite, pseudo, ep_col); break;
                     case 2: slide(board, r, c, ROOK_DIRS,   forWhite, pseudo); break;
                     case 3: hop(board, r, c, KNIGHT_OFFS,   forWhite, pseudo); break;
                     case 4: slide(board, r, c, BISHOP_DIRS, forWhite, pseudo); break;
@@ -134,8 +143,8 @@ public class move_gen {
         }
     }
 
-    // Pawns: single/double push, diagonal captures. (No en passant / promotion choice yet.)
-    static void pawnMoves(int[][] b, int r, int c, boolean white, List<Move> out){
+    // Pawns: single/double push, diagonal captures, en passant. (No promotion choice yet.)
+    static void pawnMoves(int[][] b, int r, int c, boolean white, List<Move> out, int ep_col){
         int dir      = white ? -1 : 1;   // white moves toward row 0
         int startRow = white ?  6 : 1;
         int one = r + dir;
@@ -156,6 +165,13 @@ public class move_gen {
             int t = b[one][nc];
             if(t != 0 && (t > 0) != white){ out.add(new Move(r, c, one, nc)); }
         }
+        // en passant: the pawn that just double-pushed is beside us on this rank, and we
+        // capture onto the empty square it skipped over. no occupancy check is needed --
+        // if ep_col is set that square is empty by construction.
+        int ep_row = white ? 3 : 4;
+        if(ep_col >= 0 && r == ep_row && Math.abs(c - ep_col) == 1){
+            out.add(new Move(r, c, one, ep_col));
+        }
     }
 
     // =====================================================================
@@ -164,6 +180,13 @@ public class move_gen {
 
     static boolean leavesKingInCheck(int[][] board, Move m, boolean white){
         int[][] b = copyBoard(board);
+        // en passant: a pawn moving diagonally onto an empty square can only be en passant,
+        // and the captured pawn is beside the destination rather than on it. this has to run
+        // before the destination is overwritten. it matters here because the capture strips
+        // two pawns off the same rank at once, which can expose our own king along it.
+        if(Math.abs(b[m.fromR][m.fromC]) == 1 && m.fromC != m.toC && b[m.toR][m.toC] == 0){
+            b[m.fromR][m.toC] = 0;
+        }
         b[m.toR][m.toC]   = b[m.fromR][m.fromC];
         b[m.fromR][m.fromC] = 0;
         int[] k = findKing(b, white);

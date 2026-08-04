@@ -26,6 +26,10 @@ public class board_render extends JPanel {
     private int selected_row = -1; // -1 :  nothing selected
     private int selected_col = -1;
     private boolean white_to_move = true;
+    // the file a pawn was just double-pushed on, or -1. en passant is the one rule that
+    // depends on the previous move, and board_state alone cannot express it. updated after
+    // every move by either side, since each side's right depends on the other's last move.
+    private int ep_col = -1;
     private boolean in_check = false; // deprecated because of king_safety check
     private chess_engine engine;
     private valid_move_utils validator = new valid_move_utils();
@@ -69,8 +73,19 @@ public class board_render extends JPanel {
                                 repaint(); 
                                 System.out.println("Generating Engine Move");
                                 // Play Engine Move :
-                                move_gen.Move engine_move = engine.move(board_state, white_to_move);
+                                move_gen.Move engine_move = engine.move(board_state, white_to_move, ep_col);
                                 System.out.println("Generated Move : "  + engine_move.fromR + engine_move.fromC + engine_move.toR + engine_move.toC);
+                                // en passant: a pawn moving diagonally onto an empty square can only
+                                // be en passant, and the captured pawn is beside the destination
+                                // rather than on it. must run before the destination is overwritten
+                                if(Math.abs(board_state[engine_move.fromR][engine_move.fromC]) == 1
+                                   && engine_move.fromC != engine_move.toC
+                                   && board_state[engine_move.toR][engine_move.toC] == 0){
+                                    board_state[engine_move.fromR][engine_move.toC] = 0;
+                                }
+                                // a double pawn push is the only thing that grants us en passant
+                                ep_col = (Math.abs(board_state[engine_move.fromR][engine_move.fromC]) == 1
+                                          && Math.abs(engine_move.toR - engine_move.fromR) == 2) ? engine_move.toC : -1;
                                 if(engine_move.toR == 7 && board_state[engine_move.fromR][engine_move.fromC] == -1){
                                     board_state[engine_move.toR][engine_move.toC] = -5;
                                 }
@@ -139,8 +154,17 @@ public class board_render extends JPanel {
                 move_occurs = true;
 
                 int moved_piece = board_state[selected_row][selected_col];
+                // en passant: a pawn moving diagonally onto an empty square can only be en
+                // passant, and the captured pawn is beside the destination rather than on it.
+                // must run before the destination is overwritten
+                if(Math.abs(moved_piece) == 1 && col != selected_col && board_state[row][col] == 0){
+                    board_state[selected_row][col] = 0;
+                }
                 board_state[row][col] = moved_piece;
                 board_state[selected_row][selected_col] = 0;
+                // a double pawn push is the only thing that grants the opponent en passant.
+                // computed here, while selected_row still holds the square we came from
+                ep_col = (Math.abs(moved_piece) == 1 && Math.abs(row - selected_row) == 2) ? col : -1;
                 if(moved_piece == 1 && row == 0){
                     promote_pawn(row,col, this.white_to_move);
                 }
@@ -212,10 +236,10 @@ public class board_render extends JPanel {
         
         // check for piece and run legal check for that piece
         if(selected_piece == 1){
-            return validator.white_pawn(board_state, from_row, from_col, to_row, to_col);
+            return validator.white_pawn(board_state, from_row, from_col, to_row, to_col, ep_col);
         }
         else if(selected_piece == -1){
-            return validator.black_pawn(board_state, from_row, from_col, to_row, to_col);
+            return validator.black_pawn(board_state, from_row, from_col, to_row, to_col, ep_col);
         }
         else if (selected_piece == 2){
             return validator.white_rook(board_state, from_row, from_col, to_row, to_col);

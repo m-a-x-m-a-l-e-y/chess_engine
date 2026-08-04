@@ -23,7 +23,8 @@ public class valid_move_utils {
     // PAWN
     // ==========================================================================
 
-    public boolean white_pawn(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
+    // ep_col is the file black just double-pushed a pawn on, or -1 for none
+    public boolean white_pawn(int[][] board_state, int from_row, int from_col, int to_row, int to_col, int ep_col){
         // should consolidate functions of both pieces to one function but for now this is fine just trying to make it possible to demonstrate the chess engine
         if(to_row == 7 || to_row == 6){
             return false;
@@ -46,11 +47,18 @@ public class valid_move_utils {
             if(board_state[to_row][to_col] < 0){
                 return white_move_is_safe(board_state, from_row, from_col, to_row, to_col);
             }
+            // en passant : destination is empty and the black pawn that just double-pushed
+            // sits beside us on row 3, we land on row 2 behind it
+            if(board_state[to_row][to_col] == 0 && from_row == 3 && to_col == ep_col
+               && board_state[3][to_col] == -1){
+                return white_move_is_safe(board_state, from_row, from_col, to_row, to_col);
+            }
         }
         return false;
     }
 
-    public boolean black_pawn(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
+    // ep_col is the file white just double-pushed a pawn on, or -1 for none
+    public boolean black_pawn(int[][] board_state, int from_row, int from_col, int to_row, int to_col, int ep_col){
         if(to_row == 0 || to_row == 1){
             return false;
         }
@@ -71,6 +79,12 @@ public class valid_move_utils {
         }
         else if( Math.abs(to_col - from_col) == 1 && ( to_row - from_row) == 1){
             if(board_state[to_row][to_col] > 0){
+                return black_move_is_safe(board_state, from_row, from_col, to_row, to_col);
+            }
+            // en passant : destination is empty and the white pawn that just double-pushed
+            // sits beside us on row 4, we land on row 5 behind it
+            if(board_state[to_row][to_col] == 0 && from_row == 4 && to_col == ep_col
+               && board_state[4][to_col] == 1){
                 return black_move_is_safe(board_state, from_row, from_col, to_row, to_col);
             }
         }
@@ -869,6 +883,13 @@ public class valid_move_utils {
     // Returns whether or not the move on the given board doesn't leave the mover's king in check
     private boolean white_move_is_safe(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         int[][] b = copy_board(board_state);
+        // en passant: a pawn moving diagonally onto an empty square can only be en passant,
+        // and the captured pawn is beside the destination rather than on it. must run before
+        // the destination is overwritten -- capturing strips two pawns off the same rank,
+        // which can expose our own king along it
+        if(Math.abs(b[from_row][from_col]) == 1 && from_col != to_col && b[to_row][to_col] == 0){
+            b[from_row][to_col] = 0;
+        }
         b[to_row][to_col] = b[from_row][from_col];
         b[from_row][from_col] = 0;
         return !checked_by_black(b, w_king_row, w_king_col);
@@ -877,6 +898,13 @@ public class valid_move_utils {
     // Returns whether or not the move on the given board doesn't leave the mover's king in check
     private boolean black_move_is_safe(int[][] board_state, int from_row, int from_col, int to_row, int to_col){
         int[][] b = copy_board(board_state);
+        // en passant: a pawn moving diagonally onto an empty square can only be en passant,
+        // and the captured pawn is beside the destination rather than on it. must run before
+        // the destination is overwritten -- capturing strips two pawns off the same rank,
+        // which can expose our own king along it
+        if(Math.abs(b[from_row][from_col]) == 1 && from_col != to_col && b[to_row][to_col] == 0){
+            b[from_row][to_col] = 0;
+        }
         b[to_row][to_col] = b[from_row][from_col];
         b[from_row][from_col] = 0;
         return !checked_by_white(b, b_king_row, b_king_col);
