@@ -2,8 +2,9 @@
 
 <img width="460" height="460" alt="image" src="https://github.com/user-attachments/assets/ce3aaf0f-b7c8-4e15-889b-4133781e97a8" />
 
-# Demo [VS 1000 ELO bot] ~6 min :  # 
-Demo Video : https://drive.google.com/file/d/1_AV86W1jVaQUpVcjPmrMQ_HSGRFAbrkx/view 
+# Demos :  # 
+Demo vs 1000 : https://drive.google.com/file/d/1_AV86W1jVaQUpVcjPmrMQ_HSGRFAbrkx/view \
+Demo vs 1500 : [https://drive.google.com/file/d/1_AV86W1jVaQUpVcjPmrMQ_HSGRFAbrkx/view ](https://drive.google.com/file/d/1enYe0u6WGRcW5vDzXieptMg3pX0I_-aX/view)
 
 Current best win : 1500 ELO
 Current best draw : 1600 ELO
